@@ -1,6 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { getCoches } from "./services/api";
 import "./Juego.css";
+import Ranking from "./Ranking";
+import Auth from "./Auth";
+import Header from "./Header";
+import { auth } from "./services/firebase";
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "./services/firebase";
+import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const Juego = () => {
   const [vehiculoDelDia, setVehiculoDelDia] = useState(null);
@@ -17,18 +32,59 @@ const Juego = () => {
     anoFabricacion: [],
   });
   const [errorCount, setErrorCount] = useState(0); // Número de errores cometidos
+  const [user, setUser] = useState(null); // Estado para el usuario autenticado
+  const [nickname, setNickname] = useState(""); // Estado para el nickname del usuario
+  const [showAuth, setShowAuth] = useState(false); // Mostrar/ocultar el componente Auth
+  const [nicknameSaved, setNicknameSaved] = useState(false); // Estado para saber si el nickname ha sido guardado
+  const [showNicknameModal, setShowNicknameModal] = useState(false); // Mostrar/ocultar el modal para elegir nickname
 
+  // Obtener el vehículo del día
   useEffect(() => {
     fetchVehiculoDelDia();
   }, []);
 
-  const fetchVehiculoDelDia = async () => {
-    const coches = await getCoches();
-    const hoy = new Date().toISOString().split("T")[0];
-    const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-    setVehiculoDelDia(vehiculo);
+  // Configurar la persistencia de la sesión y verificar el estado de autenticación
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+        fetchUserNickname(user.uid); // Obtener el nickname del usuario
+      } else {
+        setUser(null);
+      }
+    });
+
+    // Configurar la persistencia de la sesión
+    setPersistence(auth, browserLocalPersistence);
+
+    return () => unsubscribe(); // Limpiar el listener al desmontar el componente
+  }, []);
+
+  // Obtener el nickname del usuario desde Firestore
+  const fetchUserNickname = async (uid) => {
+    const userDoc = await getDoc(doc(db, "userNicknames", uid));
+    if (userDoc.exists() && userDoc.data().nickname) {
+      setNickname(userDoc.data().nickname);
+      setNicknameSaved(true); // Marcar que el nickname ya está guardado
+    }
   };
 
+  const fetchVehiculoDelDia = async () => {
+    try {
+      const coches = await getCoches();
+      const hoy = new Date().toISOString().split("T")[0];
+      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+      if (vehiculo) {
+        setVehiculoDelDia(vehiculo);
+      } else {
+        console.error("No se encontró el vehículo del día.");
+      }
+    } catch (error) {
+      console.error("Error al obtener el vehículo del día:", error);
+    }
+  };
+
+  // Manejar cambios en los inputs
   const handleInputChange = (e, field) => {
     const value = e.target.value;
     if (field === "marca") setMarca(value);
@@ -36,6 +92,7 @@ const Juego = () => {
     if (field === "anoFabricacion") setAnoFabricacion(value);
   };
 
+  // Estilos para los años fallidos
   const getAnoFallidoStyle = (fallido) => {
     const diferencia = Math.abs(fallido - vehiculoDelDia.AnoFabricacion);
     if (diferencia <= 2) return "custom-bg-warning-light";
@@ -44,6 +101,7 @@ const Juego = () => {
     return "custom-bg-danger";
   };
 
+  // Lógica para adivinar
   const handleGuess = () => {
     if (!vehiculoDelDia) return;
 
@@ -56,9 +114,7 @@ const Juego = () => {
         [field]: [...prev[field], value],
       }));
       setErrorCount((prev) => prev + 1); // Incrementar el contador de errores
-      setCurrentImageIndex((prevIndex) =>
-        Math.min(prevIndex + 1, vehiculoDelDia.Imagenes.length - 1)
-      ); // Cambiar a la siguiente imagen en caso de fallo
+      setCurrentImageIndex((prevIndex) => Math.min(prevIndex + 1, 3)); // Solo permite avanzar hasta la cuarta imagen
     };
 
     if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
@@ -103,6 +159,7 @@ const Juego = () => {
     }
   };
 
+  // Manejar la tecla Enter
   const handleKeyDown = (e) => {
     if (
       e.key === "Enter" &&
@@ -111,6 +168,48 @@ const Juego = () => {
       handleGuess();
     }
   };
+
+  // Guardar el nickname del usuario
+  const handleNicknameSubmit = async () => {
+    if (!nickname) return;
+
+    // Verificar si el nickname ya existe
+    const nicknameQuery = query(
+      collection(db, "userNicknames"),
+      where("nickname", "==", nickname)
+    );
+    const querySnapshot = await getDocs(nicknameQuery);
+
+    if (querySnapshot.empty) {
+      // Guardar el nickname en Firestore asociado al uid del usuario
+      await setDoc(doc(db, "userNicknames", user.uid), {
+        nickname: nickname,
+      });
+      setNicknameSaved(true); // Marcar el nickname como guardado
+      setShowNicknameModal(false); // Ocultar el modal de nickname
+      alert("Nickname guardado correctamente.");
+    } else {
+      alert("Este nickname ya está en uso. Por favor, elige otro.");
+    }
+  };
+
+  // Mostrar el componente Auth
+  const handleAuthClick = () => {
+    setShowAuth(true);
+  };
+
+  // Ocultar el componente Auth después del login
+  const handleLogin = (user) => {
+    setUser(user);
+    setShowAuth(false);
+  };
+
+  // Mostrar el modal para elegir nickname después de completar el juego
+  useEffect(() => {
+    if (isCompleted && user && !nicknameSaved) {
+      setShowNicknameModal(true);
+    }
+  }, [isCompleted, user, nicknameSaved]);
 
   if (!vehiculoDelDia) {
     return (
@@ -124,6 +223,12 @@ const Juego = () => {
 
   return (
     <div className="container mt-5">
+      <Header
+        user={user}
+        onLoginClick={handleAuthClick}
+        onRegisterClick={handleAuthClick}
+      />
+      {showAuth && <Auth onLogin={handleLogin} />}
       <div className="text-center mb-5">
         <h1 className="display-5 fw-bold">Carhoot</h1>
         <p className="text-muted">Adivina la marca, modelo y año del vehículo</p>
@@ -133,6 +238,12 @@ const Juego = () => {
         <div className="col-md-8">
           {isCompleted ? (
             <div className="text-center p-5 bg-success text-white rounded">
+              <img
+                src={vehiculoDelDia.Imagenes[4]} // Muestra la quinta imagen
+                alt="Vehículo del día"
+                className="img-fluid rounded mb-3"
+                style={{ maxHeight: "300px" }}
+              />
               <h2>¡Felicidades! 🎉</h2>
               <p>Has acertado todos los datos del vehículo del día.</p>
             </div>
@@ -160,13 +271,11 @@ const Juego = () => {
                 />
 
                 {/* Flecha derecha */}
-                {errorCount > 0 && currentImageIndex < vehiculoDelDia.Imagenes.length - 1 && (
+                {errorCount > 0 && currentImageIndex < 3 && (
                   <button
                     className="btn btn-secondary position-absolute end-0 top-50 translate-middle-y"
                     onClick={() =>
-                      setCurrentImageIndex((prevIndex) =>
-                        Math.min(prevIndex + 1, vehiculoDelDia.Imagenes.length - 1)
-                      )
+                      setCurrentImageIndex((prevIndex) => Math.min(prevIndex + 1, 3))
                     }
                   >
                     →
@@ -262,7 +371,41 @@ const Juego = () => {
             </div>
           )}
         </div>
+
+        <div className="col-md-4">
+          {user && nicknameSaved ? (
+            <>
+              <Ranking tipoRanking="semanal" semana={1} mes={10} año={2023} />
+            </>
+          ) : (
+            <p>Inicia sesión y completa el juego para ver el ranking.</p>
+          )}
+        </div>
       </div>
+
+      {/* Modal para elegir nickname */}
+      {showNicknameModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-content">
+              <h5>Elige un nombre para mostrar en el ranking</h5>
+              <input
+                type="text"
+                className="form-control mb-3"
+                placeholder="Nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+              />
+              <button
+                className="btn btn-primary"
+                onClick={handleNicknameSubmit}
+              >
+                Guardar Nickname
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

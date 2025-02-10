@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createCoches, deleteCoche, getCoches, updateCoche } from "./services/api";
+import { auth, db } from "./services/firebase";
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { Container, Navbar, Button, Form, Table, Modal, Card, Row, Col } from 'react-bootstrap';
+import './App.css'; // Importa el archivo CSS
 
 const App = () => {
   const [marca, setMarca] = useState("");
@@ -17,23 +22,63 @@ const App = () => {
     fechaProgramada: "",
   });
 
+  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
   useEffect(() => {
-    showCoches();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists() && userDoc.data().role === "admin") {
+          setUser(user);
+          setIsAdmin(true);
+          showCoches();
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
+
 
   const showCoches = async () => {
     const data = await getCoches();
     setCoches(data);
   };
 
+
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setError("");
+    } catch (err) {
+      setError("Credenciales incorrectas");
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setIsAdmin(false);
+  };
+
   const handleImageUpload = (e, isEditing = false) => {
     const files = Array.from(e.target.files);
-
-    if (
-      (isEditing
-        ? editingData.Imagenes.length + files.length
-        : imagenes.length + files.length) > 5
-    ) {
+    if ((isEditing ? editingData.Imagenes.length + files.length : imagenes.length + files.length) > 5) {
       alert("Solo puedes subir hasta 5 imágenes por coche.");
       return;
     }
@@ -67,17 +112,7 @@ const App = () => {
       Imagenes: coche.Imagenes || [],
       fechaProgramada: coche.fechaProgramada || "",
     });
-  };
-
-  const handleRemoveImage = (index, isEditing = false) => {
-    if (isEditing) {
-      setEditingData((prev) => ({
-        ...prev,
-        Imagenes: prev.Imagenes.filter((_, i) => i !== index),
-      }));
-    } else {
-      setImagenes((prev) => prev.filter((_, i) => i !== index));
-    }
+    setShowEditModal(true);
   };
 
   const handleUpdate = async () => {
@@ -91,8 +126,16 @@ const App = () => {
         Imagenes: [],
         fechaProgramada: "",
       });
+      setShowEditModal(false);
       showCoches();
     }
+  };
+
+  const handleDeleteImage = (index) => {
+    setEditingData((prev) => ({
+      ...prev,
+      Imagenes: prev.Imagenes.filter((_, i) => i !== index),
+    }));
   };
 
   const getVehiculoDelDia = () => {
@@ -102,222 +145,297 @@ const App = () => {
 
   const vehiculoDelDia = getVehiculoDelDia();
 
+  const filteredCoches = coches.filter((coche) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      coche.Marca.toLowerCase().includes(searchLower) ||
+      coche.Modelo.toLowerCase().includes(searchLower)
+    );
+  });
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Gestión de Coches</h1>
-
-      {/* Formulario para insertar nuevo coche */}
-      <div>
-        <input
-          type="text"
-          placeholder="Marca"
-          value={marca}
-          onChange={(e) => setMarca(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Modelo"
-          value={modelo}
-          onChange={(e) => setModelo(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Año de Fabricación"
-          value={anoFabricacion}
-          onChange={(e) => setAnoFabricacion(e.target.value)}
-        />
-        <input
-          type="date"
-          value={fechaProgramada}
-          onChange={(e) => setFechaProgramada(e.target.value)}
-        />
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => handleImageUpload(e)}
-        />
-        <div style={{ marginTop: "10px" }}>
-          {imagenes.map((img, index) => (
-            <div key={index} style={{ display: "inline-block", marginRight: "10px" }}>
-              <img
-                src={img}
-                alt={`Imagen ${index + 1}`}
-                style={{ width: "100px", height: "auto" }}
-              />
-              <button onClick={() => handleRemoveImage(index)}>Eliminar</button>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={async () => {
-            if (imagenes.length > 5) {
-              alert("Solo puedes subir hasta 5 imágenes por coche.");
-              return;
-            }
-
-            await createCoches({
-              Marca: marca,
-              Modelo: modelo,
-              AnoFabricacion: anoFabricacion,
-              Imagenes: imagenes,
-              fechaProgramada,
-            });
-
-            setMarca("");
-            setModelo("");
-            setAnoFabricacion("");
-            setFechaProgramada("");
-            setImagenes([]);
-            showCoches();
-          }}
-        >
-          Insertar Coche
-        </button>
-      </div>
-
-      {/* Vehículo del día */}
-      <div style={{ marginTop: "20px" }}>
-        <h2>Vehículo del Día</h2>
-        {vehiculoDelDia ? (
-          <div>
-            <p>
-              <strong>Marca:</strong> {vehiculoDelDia.Marca}
-            </p>
-            <p>
-              <strong>Modelo:</strong> {vehiculoDelDia.Modelo}
-            </p>
-            <p>
-              <strong>Año:</strong> {vehiculoDelDia.AnoFabricacion}
-            </p>
-            <div>
-              {vehiculoDelDia.Imagenes.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`Vehículo del día ${index + 1}`}
-                  style={{ width: "100px", height: "auto", marginRight: "10px" }}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p>No hay vehículo programado para hoy.</p>
+    <Container>
+      <Navbar bg="white" variant="white" className="mb-4">
+        <Navbar.Brand>Gestión de Coches</Navbar.Brand>
+        {user && (
+          <Button variant="outline-dark" onClick={handleLogout}>
+            Cerrar sesión
+          </Button>
         )}
-      </div>
+      </Navbar>
 
-      {/* Tabla para mostrar y gestionar los coches */}
-      <table style={{ marginTop: "20px", width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Año</th>
-            <th>Fecha Programada</th>
-            <th>Imágenes</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {coches.map((coche) => (
-            <tr key={coche.id}>
-              <td>{coche.id}</td>
-              <td>{editingId === coche.id ? (
-                <input
-                  type="text"
-                  value={editingData.Marca}
-                  onChange={(e) =>
-                    setEditingData((prev) => ({ ...prev, Marca: e.target.value }))
-                  }
-                />
-              ) : (
-                coche.Marca
-              )}</td>
-              <td>{editingId === coche.id ? (
-                <input
-                  type="text"
-                  value={editingData.Modelo}
-                  onChange={(e) =>
-                    setEditingData((prev) => ({ ...prev, Modelo: e.target.value }))
-                  }
-                />
-              ) : (
-                coche.Modelo
-              )}</td>
-              <td>{editingId === coche.id ? (
-                <input
-                  type="number"
-                  value={editingData.AnoFabricacion}
-                  onChange={(e) =>
-                    setEditingData((prev) => ({ ...prev, AnoFabricacion: e.target.value }))
-                  }
-                />
-              ) : (
-                coche.AnoFabricacion
-              )}</td>
-              <td>{editingId === coche.id ? (
-                <input
-                  type="date"
-                  value={editingData.fechaProgramada}
-                  onChange={(e) =>
-                    setEditingData((prev) => ({ ...prev, fechaProgramada: e.target.value }))
-                  }
-                />
-              ) : (
-                coche.fechaProgramada
-              )}</td>
-              <td>{editingId === coche.id ? (
-                <div>
-                  <input
+      {!user ? (
+        <Row className="justify-content-center">
+          <Col md={6}>
+            <Card>
+              <Card.Body>
+                <h2>Iniciar sesión</h2>
+                <Form>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="email"
+                      placeholder="Correo"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Control
+                      type="password"
+                      placeholder="Contraseña"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </Form.Group>
+                  <Button onClick={handleLogin}>Iniciar sesión</Button>
+                  {error && <p className="text-danger mt-2">{error}</p>}
+                </Form>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      ) : isAdmin ? (
+        <>
+          <h2>Panel de Administración</h2>
+
+          <Row className="mb-4">
+            <Col>
+              <Form.Control
+                type="text"
+                placeholder="Buscar por marca o modelo"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Col>
+            <Col>
+              <Button onClick={() => setShowAddModal(true)}>Añadir Coche</Button>
+            </Col>
+          </Row>
+
+          {vehiculoDelDia && (
+            <Card className="mb-4">
+              <Card.Body>
+                <Card.Title>Vehículo del Día</Card.Title>
+                <Card.Text>
+                  {vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} ({vehiculoDelDia.AnoFabricacion})
+                </Card.Text>
+                <Row>
+                  {vehiculoDelDia.Imagenes?.map((img, index) => (
+                    <Col key={index} md={3}>
+                      <Card.Img variant="top" src={img} alt={`Coche ${index}`} className="car-image" />
+                    </Col>
+                  ))}
+                </Row>
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* Tabla para pantallas grandes (oculta en moviles) */}
+          <div className="d-none d-md-block">
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>Año</th>
+                  <th>Fecha Programada</th>
+                  <th>Imágenes</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCoches.map((coche) => (
+                  <tr key={coche.id}>
+                    <td>{coche.Marca}</td>
+                    <td>{coche.Modelo}</td>
+                    <td>{coche.AnoFabricacion}</td>
+                    <td>{coche.fechaProgramada}</td>
+                    <td>
+                      <Row>
+                        {coche.Imagenes?.map((img, index) => (
+                          <Col key={index} md={3}>
+                            <Card.Img variant="top" src={img} alt={`Coche ${index}`} className="car-image" />
+                          </Col>
+                        ))}
+                      </Row>
+                    </td>
+                    <td>
+                      <Button variant="warning" onClick={() => handleEdit(coche.id, coche)}>Editar</Button>{' '}
+                      <Button variant="danger" onClick={async () => { await deleteCoche(coche.id); showCoches(); }}>Eliminar</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+
+          {/* Tarjetas para moviles (ocultas en pantallas grandes) */}
+          <div className="d-block d-md-none">
+            {filteredCoches.map((coche) => (
+              <Card key={coche.id} className="mb-4">
+                <Card.Body>
+                  <Card.Title>{coche.Marca} {coche.Modelo}</Card.Title>
+                  <Card.Text>
+                    <strong>Año:</strong> {coche.AnoFabricacion}<br />
+                    <strong>Fecha Programada:</strong> {coche.fechaProgramada}
+                  </Card.Text>
+                  <Row>
+                    {coche.Imagenes?.map((img, index) => (
+                      <Col key={index} xs={6} md={3}>
+                        <Card.Img variant="top" src={img} alt={`Coche ${index}`} className="car-image" />
+                      </Col>
+                    ))}
+                  </Row>
+                  <div className="mt-3">
+                    <Button variant="warning" onClick={() => handleEdit(coche.id, coche)}>Editar</Button>{' '}
+                    <Button variant="danger" onClick={async () => { await deleteCoche(coche.id); showCoches(); }}>Eliminar</Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            ))}
+          </div>
+
+          {/* Modal para añadir coche */}
+          <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Añadir Coche</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Marca"
+                    value={marca}
+                    onChange={(e) => setMarca(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Modelo"
+                    value={modelo}
+                    onChange={(e) => setModelo(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="number"
+                    placeholder="Año de Fabricación"
+                    value={anoFabricacion}
+                    onChange={(e) => setAnoFabricacion(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="date"
+                    value={fechaProgramada}
+                    onChange={(e) => setFechaProgramada(e.target.value)}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handleImageUpload(e)}
+                  />
+                </Form.Group>
+              </Form>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  await createCoches({ Marca: marca, Modelo: modelo, AnoFabricacion: anoFabricacion, Imagenes: imagenes, fechaProgramada });
+                  setMarca(""); setModelo(""); setAnoFabricacion(""); setFechaProgramada(""); setImagenes([]);
+                  setShowAddModal(false);
+                  showCoches();
+                }}
+              >
+                Guardar
+              </Button>
+            </Modal.Footer>
+          </Modal>
+
+          {/* Modal para editar coche */}
+          <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Editar Coche</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Marca"
+                    value={editingData.Marca}
+                    onChange={(e) => setEditingData({ ...editingData, Marca: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Modelo"
+                    value={editingData.Modelo}
+                    onChange={(e) => setEditingData({ ...editingData, Modelo: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="number"
+                    placeholder="Año de Fabricación"
+                    value={editingData.AnoFabricacion}
+                    onChange={(e) => setEditingData({ ...editingData, AnoFabricacion: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="date"
+                    value={editingData.fechaProgramada}
+                    onChange={(e) => setEditingData({ ...editingData, fechaProgramada: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Control
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={(e) => handleImageUpload(e, true)}
                   />
+                </Form.Group>
+                <Row>
                   {editingData.Imagenes.map((img, index) => (
-                    <div key={index}>
-                      <img src={img} alt="" style={{ width: "100px" }} />
-                      <button onClick={() => handleRemoveImage(index, true)}>X</button>
-                    </div>
+                    <Col key={index} md={3}>
+                      <Card.Img variant="top" src={img} alt={`Imagen ${index}`} className="car-image" />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteImage(index)}
+                      >
+                        X
+                      </Button>
+                    </Col>
                   ))}
-                </div>
-              ) : (
-                coche.Imagenes?.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    alt={`Imagen ${index + 1}`}
-                    style={{ width: "100px", height: "auto", marginRight: "10px" }}
-                  />
-                ))
-              )}</td>
-              <td>
-                {editingId === coche.id ? (
-                  <>
-                    <button onClick={handleUpdate}>Guardar</button>
-                    <button onClick={() => setEditingId(null)}>Cancelar</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => handleEdit(coche.id, coche)}>Editar</button>
-                    <button
-                      onClick={async () => {
-                        await deleteCoche(coche.id);
-                        showCoches();
-                      }}
-                    >
-                      Borrar
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                </Row>
+              </Form>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="primary" onClick={handleUpdate}>
+                Guardar
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </>
+      ) : (
+        <p>No tienes permiso para acceder a esta sección.</p>
+      )}
+    </Container>
   );
 };
 
 export default App;
+

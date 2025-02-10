@@ -1,0 +1,6 @@
+.car-image {
+    width: 150px; /* Ajusta el tamaño según tus necesidades */
+    height: 200px; /* Ajusta el tamaño según tus necesidades */
+    object-fit: cover; /* Esto asegura que la imagen se ajuste al tamaño sin distorsionarse */
+    margin-bottom: 10px; /* Espacio entre imágenes */
+  }

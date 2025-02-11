@@ -1,32 +1,49 @@
 import React, { useEffect, useState } from "react";
-import { obtenerRankingMensual, obtenerRankingSemanal } from "./services/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "./services/firebase";
 
-const Ranking = ({ tipoRanking, semana, mes, año }) => {
+const obtenerRankingDiario = async () => {
+  const hoy = new Date();
+  const fecha = hoy.toISOString().split("T")[0]; // Formato YYYY-MM-DD
+
+  const q = query(
+    collection(db, "ranking"),
+    where("fecha", "==", fecha) // Filtrar por la fecha actual
+  );
+
+  const querySnapshot = await getDocs(q);
+  const ranking = querySnapshot.docs.map((doc) => doc.data());
+
+  // Ordenar el ranking por tiempoTotal y fallosTotales
+  ranking.sort((a, b) => {
+    if (a.tiempoTotal === b.tiempoTotal) {
+      return a.fallosTotales - b.fallosTotales;
+    }
+    return a.tiempoTotal - b.tiempoTotal;
+  });
+
+  return ranking;
+};
+
+const Ranking = () => {
   const [ranking, setRanking] = useState([]);
 
   useEffect(() => {
     const fetchRanking = async () => {
-      let rankingData;
-      if (tipoRanking === "mensual") {
-        rankingData = await obtenerRankingMensual(mes, año);
-      } else if (tipoRanking === "semanal") {
-        rankingData = await obtenerRankingSemanal(semana, mes, año);
-      }
+      const rankingData = await obtenerRankingDiario();
       setRanking(rankingData);
     };
 
     fetchRanking();
-  }, [tipoRanking, semana, mes, año]);
+  }, []);
 
   return (
     <div className="ranking">
-      <h3>
-        {tipoRanking === "mensual" ? "Top Mensual" : `Top Semana ${semana}`}
-      </h3>
+      <h3>Ranking Diario</h3>
       <ul>
         {ranking.map((item, index) => (
           <li key={index}>
-            {index + 1}. {item.nickname} - {item.tiempoTotal}s - {item.fallosTotales} fallos - {item.diasJugados} días
+            {index + 1}. {item.nickname} - {item.fallosTotales} fallos - {item.tiempoTotal}s
           </li>
         ))}
       </ul>

@@ -37,6 +37,8 @@ const Juego = () => {
   const [showAuth, setShowAuth] = useState(false); // Mostrar/ocultar el componente Auth
   const [nicknameSaved, setNicknameSaved] = useState(false); // Estado para saber si el nickname ha sido guardado
   const [showNicknameModal, setShowNicknameModal] = useState(false); // Mostrar/ocultar el modal para elegir nickname
+  const [tiempoTotal, setTiempoTotal] = useState(0); // Tiempo total en segundos
+  const [intervalId, setIntervalId] = useState(null); // ID del intervalo del temporizador
 
   // Obtener el vehículo del día
   useEffect(() => {
@@ -47,10 +49,10 @@ const Juego = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setUser(user);
+        setUser(user); // Actualiza el estado del usuario
         fetchUserNickname(user.uid); // Obtener el nickname del usuario
       } else {
-        setUser(null);
+        setUser(null); // Si no hay usuario, establecer el estado como null
       }
     });
 
@@ -69,6 +71,7 @@ const Juego = () => {
     }
   };
 
+  // Obtener el vehículo del día
   const fetchVehiculoDelDia = async () => {
     try {
       const coches = await getCoches();
@@ -193,21 +196,53 @@ const Juego = () => {
     }
   };
 
-  // Mostrar el componente Auth
-  const handleAuthClick = () => {
-    setShowAuth(true);
+  // Guardar la puntuación del usuario
+  const guardarPuntuacion = async () => {
+    const hoy = new Date();
+    const fecha = hoy.toISOString().split("T")[0]; // Formato YYYY-MM-DD
+    const userId = user.uid; // ID del usuario autenticado
+
+    const puntuacion = {
+      userId: userId,
+      nickname: nickname,
+      fallosTotales: errorCount, // Número de intentos fallidos
+      tiempoTotal: tiempoTotal, // Tiempo total en segundos
+      fecha: fecha,
+    };
+
+    try {
+      // Guardar la puntuación en Firestore
+      await setDoc(doc(db, "ranking", `${fecha}-${userId}`), puntuacion);
+      console.log("Puntuación guardada correctamente.");
+    } catch (error) {
+      console.error("Error al guardar la puntuación:", error);
+    }
   };
 
-  // Ocultar el componente Auth después del login
-  const handleLogin = (user) => {
-    setUser(user);
-    setShowAuth(false);
-  };
+  // Iniciar el temporizador cuando el usuario comienza a jugar
+  useEffect(() => {
+    if (step === 1 && !intervalId) {
+      const id = setInterval(() => {
+        setTiempoTotal((prev) => prev + 1); // Incrementar el tiempo cada segundo
+      }, 1000);
+      setIntervalId(id);
+    }
+  }, [step]);
+
+  // Detener el temporizador cuando el usuario completa el juego
+  useEffect(() => {
+    if (isCompleted && intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+  }, [isCompleted]);
 
   // Mostrar el modal para elegir nickname después de completar el juego
   useEffect(() => {
     if (isCompleted && user && !nicknameSaved) {
       setShowNicknameModal(true);
+    } else if (isCompleted && user && nicknameSaved) {
+      guardarPuntuacion(); // Guardar la puntuación cuando el juego se complete
     }
   }, [isCompleted, user, nicknameSaved]);
 
@@ -225,10 +260,10 @@ const Juego = () => {
     <div className="container mt-5">
       <Header
         user={user}
-        onLoginClick={handleAuthClick}
-        onRegisterClick={handleAuthClick}
+        onLoginClick={() => setShowAuth(true)}
+        onRegisterClick={() => setShowAuth(true)}
       />
-      {showAuth && <Auth onLogin={handleLogin} />}
+      {showAuth && !user && <Auth onLogin={(user) => setUser(user)} />}
       <div className="text-center mb-5">
         <h1 className="display-5 fw-bold">Carhoot</h1>
         <p className="text-muted">Adivina la marca, modelo y año del vehículo</p>
@@ -374,9 +409,7 @@ const Juego = () => {
 
         <div className="col-md-4">
           {user && nicknameSaved ? (
-            <>
-              <Ranking tipoRanking="semanal" semana={1} mes={10} año={2023} />
-            </>
+            <Ranking />
           ) : (
             <p>Inicia sesión y completa el juego para ver el ranking.</p>
           )}

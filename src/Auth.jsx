@@ -5,7 +5,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { auth} from "./services/firebase";
+import { auth } from "./services/firebase";
 
 const Auth = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -20,9 +20,10 @@ const Auth = ({ onLogin }) => {
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
-      onLogin(auth.currentUser);
+      onLogin(auth.currentUser); // Pasar el usuario autenticado al componente Juego
     } catch (error) {
       console.error("Error en autenticación:", error.message);
+      alert(error.message); // Mostrar un mensaje de error al usuario
     }
   };
 
@@ -30,9 +31,10 @@ const Auth = ({ onLogin }) => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      onLogin(auth.currentUser);
+      onLogin(auth.currentUser); // Pasar el usuario autenticado al componente Juego
     } catch (error) {
       console.error("Error en autenticación con Google:", error.message);
+      alert(error.message); // Mostrar un mensaje de error al usuario
     }
   };
 

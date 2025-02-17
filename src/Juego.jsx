@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { AppContext } from "./context/AppContext"; // Importar el contexto
 import { getCoches } from "./services/api";
 import "./Juego.css";
 import Header from "./Header";
 
 const Juego = () => {
+  const { theme, language } = useContext(AppContext); // Usar el contexto
+
+  // Estados del juego
   const [vehiculoDelDia, setVehiculoDelDia] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [marca, setMarca] = useState("");
@@ -21,6 +25,7 @@ const Juego = () => {
   const [showHint, setShowHint] = useState(false); // Mostrar pista después de 7 intentos
   const [maxImageIndex, setMaxImageIndex] = useState(0); // Máximo índice de imagen que se puede ver
 
+  // Obtener el vehículo del día
   useEffect(() => {
     fetchVehiculoDelDia();
   }, []);
@@ -32,6 +37,7 @@ const Juego = () => {
     setVehiculoDelDia(vehiculo);
   };
 
+  // Manejar cambios en los inputs
   const handleInputChange = (e, field) => {
     const value = e.target.value;
     if (field === "marca") setMarca(value);
@@ -39,6 +45,7 @@ const Juego = () => {
     if (field === "anoFabricacion") setAnoFabricacion(value);
   };
 
+  // Estilos para los años fallidos
   const getAnoFallidoStyle = (fallido) => {
     const diferencia = Math.abs(fallido - vehiculoDelDia.AnoFabricacion);
     if (diferencia <= 2) return "custom-bg-warning-light";
@@ -47,6 +54,7 @@ const Juego = () => {
     return "custom-bg-danger";
   };
 
+  // Lógica para adivinar
   const handleGuess = () => {
     if (!vehiculoDelDia) return;
 
@@ -119,6 +127,7 @@ const Juego = () => {
     }
   };
 
+  // Manejar la tecla Enter
   const handleKeyDown = (e) => {
     if (
       e.key === "Enter" &&
@@ -128,6 +137,7 @@ const Juego = () => {
     }
   };
 
+  // Obtener pista
   const getHint = () => {
     if (step === 1) {
       return `Pista: La marca comienza con "${vehiculoDelDia.Marca[0]}"`;
@@ -136,6 +146,9 @@ const Juego = () => {
     }
     return "";
   };
+
+  // Clase dinámica para el tema
+  const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
   if (!vehiculoDelDia) {
     return (
@@ -147,7 +160,7 @@ const Juego = () => {
   }
 
   return (
-    <>
+    <div className={containerClass}>
       <Header />
       <div className="container">
         <div className="game-container">
@@ -283,7 +296,7 @@ const Juego = () => {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

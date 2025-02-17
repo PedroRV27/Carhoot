@@ -1,21 +1,9 @@
-import React, { useState } from "react";
-import "./Header.css"; // Asegúrate de crear este archivo CSS para los estilos
+import React, { useContext } from "react";
+import { AppContext } from "./context/AppContext"; // Importar el contexto
+import "./Header.css";
 
 const Header = () => {
-  const [theme, setTheme] = useState("light"); // Estado para el tema
-  const [language, setLanguage] = useState("es"); // Estado para el idioma
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    document.body.setAttribute("data-theme", newTheme); // Cambiar el tema en el body
-  };
-
-  const toggleLanguage = () => {
-    const newLanguage = language === "es" ? "en" : "es";
-    setLanguage(newLanguage);
-    // Aquí podrías agregar lógica para cambiar el idioma de la aplicación
-  };
+  const { theme, language, toggleTheme, toggleLanguage } = useContext(AppContext); // Usar el contexto
 
   return (
     <header className="header">

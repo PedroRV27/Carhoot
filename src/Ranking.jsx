@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs,orderBy } from "firebase/firestore";
 import { db } from "./services/firebase";
 
 const obtenerRankingDiario = async () => {
@@ -25,17 +25,30 @@ const obtenerRankingDiario = async () => {
   return ranking;
 };
 
-const Ranking = () => {
+const Ranking = ({ userId }) => {
   const [ranking, setRanking] = useState([]);
+  const [userRank, setUserRank] = useState(null);
 
   useEffect(() => {
-    const fetchRanking = async () => {
-      const rankingData = await obtenerRankingDiario();
-      setRanking(rankingData);
-    };
+    // Consulta Firestore para obtener los mejores jugadores en tiempo real
+    const rankingRef = collection(db, "ranking");
+    const q = query(rankingRef, orderBy("score", "asc"), orderBy("time", "asc"), limit(10));
 
-    fetchRanking();
-  }, []);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rankingList = snapshot.docs.map((doc, index) => ({
+        id: doc.id,
+        ...doc.data(),
+        position: index + 1,
+      }));
+      setRanking(rankingList);
+
+      // Encuentra la posición del usuario actual en el ranking
+      const userEntry = rankingList.find((entry) => entry.id === userId);
+      setUserRank(userEntry ? userEntry.position : null);
+    });
+
+    return () => unsubscribe(); // Detener la escucha cuando el componente se desmonte
+  }, [userId]);
 
   return (
     <div className="ranking">

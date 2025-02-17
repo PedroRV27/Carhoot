@@ -1,0 +1,85 @@
+:root {
+    --header-bg: #ffffff;
+    --text-color: #000000;
+  }
+  
+  [data-theme="dark"] {
+    --header-bg: #333333;
+    --text-color: #ffffff;
+  }
+  
+.header {
+    background-color: var(--header-bg);
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .header-left .app-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .theme-selector {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  
+  .theme-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--text-color);
+    transition: background-color 0.3s ease;
+  }
+  
+  .theme-circle.light {
+    background-color: #ffffff;
+  }
+  
+  .theme-circle.dark {
+    background-color: #000000;
+  }
+  
+  .language-button {
+    background: none;
+    border: 2px solid var(--text-color);
+    color: var(--text-color);
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .language-button:hover {
+    background-color: var(--text-color);
+    color: var(--header-bg);
+  }
+  
+  /* Estilos para móviles y tablets */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: row;
+      align-items: center;
+    }
+  
+    .header-right {
+      margin-top: 0;
+    }
+  }

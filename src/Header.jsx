@@ -1,29 +1,37 @@
-import React from "react";
-import { auth } from "./services/firebase";
-import { signOut } from "firebase/auth";
+import React, { useState } from "react";
+import "./Header.css"; // Asegúrate de crear este archivo CSS para los estilos
 
-const Header = ({ user, onLoginClick, onRegisterClick }) => {
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
+const Header = () => {
+  const [theme, setTheme] = useState("light"); // Estado para el tema
+  const [language, setLanguage] = useState("es"); // Estado para el idioma
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.body.setAttribute("data-theme", newTheme); // Cambiar el tema en el body
+  };
+
+  const toggleLanguage = () => {
+    const newLanguage = language === "es" ? "en" : "es";
+    setLanguage(newLanguage);
+    // Aquí podrías agregar lógica para cambiar el idioma de la aplicación
   };
 
   return (
     <header className="header">
-      <h1>Carhoot</h1>
-      <nav>
-        {user ? (
-          <button onClick={handleLogout}>Cerrar Sesión</button>
-        ) : (
-          <>
-            <button onClick={onLoginClick}>Iniciar Sesión</button>
-            <button onClick={onRegisterClick}>Registrarse</button>
-          </>
-        )}
-      </nav>
+      <div className="header-content">
+        <div className="header-left">
+          <h1 className="app-name">Carhoot</h1>
+        </div>
+        <div className="header-right">
+          <div className="theme-selector" onClick={toggleTheme}>
+            <div className={`theme-circle ${theme}`}></div>
+          </div>
+          <button className="language-button" onClick={toggleLanguage}>
+            {language === "es" ? "ES" : "EN"}
+          </button>
+        </div>
+      </div>
     </header>
   );
 };

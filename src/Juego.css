@@ -1,9 +1,7 @@
 /* General Styles for Juego */
 body {
-  /* background-image: url("../src/assets/Background.jpg");  no utilizar */
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  overflow:hidden;
+
 }
 
 
@@ -245,9 +243,10 @@ input.error {
 
 /*Flechas de navegacion*/
 .nav-button {
-  position: absolute;
+  position: fixed;
   top: 50%;
-  transform: translateY(-100%);
+  transform: translateY(-180%);
+  
   color: rgb(0, 0, 0);
   border: none;
   background: transparent;
@@ -256,11 +255,11 @@ input.error {
 }
 
 .nav-button.left {
-  left: +50px;
+  left: +450px;
 }
 
 .nav-button.right {
-  right: +50px;
+  right: +450px;
 }
 
 /* Dark Theme Styles */
@@ -365,6 +364,14 @@ input.error {
 }
 
 
+.title-container {
+  text-align: center;
+  padding: 5px; /* Espaciado interno */
+  margin-top: -20px;
+}
 
+.dark-theme .title-container {
+  color:white;
+}
 
 

@@ -176,6 +176,9 @@ const Juego = () => {
             </div>
           ) : (
             <div className="card">
+              <div className="title-container">
+                <h1 className="game-title">Guess the Car</h1>
+              </div>
               <div className="card-content">
                 <div className="image-container">
                   {currentImageIndex > 0 && (
@@ -213,7 +216,7 @@ const Juego = () => {
                       <input
                         type="text"
                         className={`input-field ${inputStatus}`}
-                        placeholder="Introduce la marca"
+                        placeholder="Introduce la marca  Ej: Bmw,Mercedes.."
                         value={marca}
                         onChange={(e) => handleInputChange(e, "marca")}
                         onKeyDown={handleKeyDown}
@@ -240,7 +243,7 @@ const Juego = () => {
                       <input
                         type="text"
                         className={`input-field ${inputStatus}`}
-                        placeholder="Introduce el modelo"
+                        placeholder="Introduce el modelo Ej: SL CLass,Mustang..."
                         value={modelo}
                         onChange={(e) => handleInputChange(e, "modelo")}
                         onKeyDown={handleKeyDown}

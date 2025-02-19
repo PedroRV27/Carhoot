@@ -1,31 +1,52 @@
 import React, { useContext, useEffect, useState } from "react";
-import { AppContext } from "./context/AppContext"; // Importar el contexto
+import { AppContext } from "./context/AppContext";
 import { getCoches } from "./services/api";
 import "./Juego.css";
 import Header from "./Header";
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
+  <input
+    type="text"
+    className={`form-control input-field ${status}`}
+    placeholder={placeholder}
+    value={value}
+    onChange={onChange}
+    onKeyDown={onKeyDown}
+    disabled={disabled}
+  />
+);
+
+const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
+  <ul className="list-group intentos-fallidos">
+    {attempts.slice().reverse().map((intento, idx) => (
+      <li key={idx} className={`list-group-item ${getFallidoStyle ? getFallidoStyle(intento) : ''}`}>
+        {intento}
+      </li>
+    ))}
+  </ul>
+);
 
 const Juego = () => {
-  const { theme, language } = useContext(AppContext); // Usar el contexto
+  const { theme, language } = useContext(AppContext);
 
-  // Estados del juego
   const [vehiculoDelDia, setVehiculoDelDia] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
   const [anoFabricacion, setAnoFabricacion] = useState("");
-  const [step, setStep] = useState(1); // 1: Marca, 2: Modelo, 3: Año
+  const [step, setStep] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [inputStatus, setInputStatus] = useState(""); // success, error
+  const [inputStatus, setInputStatus] = useState("");
   const [intentosFallidos, setIntentosFallidos] = useState({
     marca: [],
     modelo: [],
     anoFabricacion: [],
   });
-  const [errorCount, setErrorCount] = useState(0); // Número de errores cometidos en el paso actual
-  const [showHint, setShowHint] = useState(false); // Mostrar pista después de 7 intentos
-  const [maxImageIndex, setMaxImageIndex] = useState(0); // Máximo índice de imagen que se puede ver
+  const [errorCount, setErrorCount] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const [maxImageIndex, setMaxImageIndex] = useState(0);
 
-  // Obtener el vehículo del día
   useEffect(() => {
     fetchVehiculoDelDia();
   }, []);
@@ -37,7 +58,6 @@ const Juego = () => {
     setVehiculoDelDia(vehiculo);
   };
 
-  // Manejar cambios en los inputs
   const handleInputChange = (e, field) => {
     const value = e.target.value;
     if (field === "marca") setMarca(value);
@@ -45,16 +65,14 @@ const Juego = () => {
     if (field === "anoFabricacion") setAnoFabricacion(value);
   };
 
-  // Estilos para los años fallidos
   const getAnoFallidoStyle = (fallido) => {
     const diferencia = Math.abs(fallido - vehiculoDelDia.AnoFabricacion);
-    if (diferencia <= 2) return "custom-bg-warning-light";
-    if (diferencia <= 5) return "custom-bg-orange";
-    if (diferencia <= 9) return "custom-bg-orange-dark";
-    return "custom-bg-danger";
+    if (diferencia <= 2) return "fallido custom-bg-warning-light";
+    if (diferencia <= 5) return "fallido custom-bg-orange";
+    if (diferencia <= 9) return "fallido custom-bg-orange-dark";
+    return "fallido custom-bg-danger";
   };
 
-  // Lógica para adivinar
   const handleGuess = () => {
     if (!vehiculoDelDia) return;
 
@@ -66,13 +84,10 @@ const Juego = () => {
         ...prev,
         [field]: [...prev[field], value],
       }));
-      setErrorCount((prev) => prev + 1); // Incrementar el contador de errores en el paso actual
+      setErrorCount((prev) => prev + 1);
 
-      // Desbloquear la siguiente imagen
-      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3); // Asegurar que no se exceda el límite de imágenes
+      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
       setMaxImageIndex(nuevoMaxIndex);
-
-      // Mostrar directamente la nueva imagen desbloqueada
       setCurrentImageIndex(nuevoMaxIndex);
     };
 
@@ -82,8 +97,8 @@ const Juego = () => {
         setStep(2);
         setMarca("");
         setInputStatus("");
-        setErrorCount(0); // Reiniciar el contador de errores al cambiar de paso
-        setShowHint(false); // Ocultar la pista al cambiar de paso
+        setErrorCount(0);
+        setShowHint(false);
       }, 800);
     } else if (step === 1) {
       setInputStatus("error");
@@ -95,8 +110,8 @@ const Juego = () => {
         setStep(3);
         setModelo("");
         setInputStatus("");
-        setErrorCount(0); // Reiniciar el contador de errores al cambiar de paso
-        setShowHint(false); // Ocultar la pista al cambiar de paso
+        setErrorCount(0);
+        setShowHint(false);
       }, 800);
     } else if (step === 2) {
       setInputStatus("error");
@@ -121,13 +136,11 @@ const Juego = () => {
       setTimeout(() => setInputStatus(""), 300);
     }
 
-    // Mostrar pista después de 7 intentos fallidos en el paso actual
     if (errorCount + 1 >= 7 && step !== 3) {
       setShowHint(true);
     }
   };
 
-  // Manejar la tecla Enter
   const handleKeyDown = (e) => {
     if (
       e.key === "Enter" &&
@@ -137,7 +150,6 @@ const Juego = () => {
     }
   };
 
-  // Obtener pista
   const getHint = () => {
     if (step === 1) {
       return `Pista: La marca comienza con "${vehiculoDelDia.Marca[0]}"`;
@@ -147,12 +159,11 @@ const Juego = () => {
     return "";
   };
 
-  // Clase dinámica para el tema
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
   if (!vehiculoDelDia) {
     return (
-      <div className="spinner-container">
+      <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
         <span>Cargando vehículo del día...</span>
       </div>
@@ -163,140 +174,150 @@ const Juego = () => {
     <div className={containerClass}>
       <Header />
       <div className="container">
-        <div className="game-container">
-          {isCompleted ? (
-            <div className="success-message">
-              <h2>¡Felicidades! 🎉</h2>
-              <p>Has acertado todos los datos del vehículo del día.</p>
-              <img
-                src={vehiculoDelDia.Imagenes[4]}
-                alt="Vehículo del día"
-                className="success-image"
-              />
-            </div>
-          ) : (
-            <div className="card">
-              <div className="title-container">
-                <h1 className="game-title">Guess the Car</h1>
+        <div className="row justify-content-center">
+          <div className="col-md-8">
+            {isCompleted ? (
+              <div className="text-center">
+                <h2 className="success-message">¡Felicidades! 🎉</h2>
+                <p>Has acertado todos los datos del vehículo del día.</p>
+                <img
+                  src={vehiculoDelDia.Imagenes[4]}
+                  alt="Vehículo del día"
+                  className="success-image img-fluid rounded"
+                />
               </div>
-              <div className="card-content">
-                <div className="image-container">
-                  {currentImageIndex > 0 && (
-                    <button
-                      className="nav-button left"
-                      onClick={() => setCurrentImageIndex((prevIndex) => Math.max(prevIndex - 1, 0))}
-                    >
-                      {"<"}
-                    </button>
-                  )}
-
-                  <img
-                    src={vehiculoDelDia.Imagenes[currentImageIndex]}
-                    alt="Vehículo del día"
-                    className="vehicle-image"
-                  />
-
-                  {currentImageIndex < maxImageIndex && (
-                    <button
-                      className="nav-button right"
-                      onClick={() => setCurrentImageIndex((prevIndex) => Math.min(prevIndex + 1, maxImageIndex))}
-                    >
-                      {">"}
-                    </button>
-                  )}
+            ) : (
+              <div className="card">
+                <div className="title-container">
+                  <h1 className="game-title">Guess the Car</h1>
                 </div>
+                <div className="card-body">
+                  <div className="position-relative">
+                    <img
+                      src={vehiculoDelDia.Imagenes[currentImageIndex]}
+                      alt="Vehículo del día"
+                      className="img-fluid rounded vehicle-image"
+                    />
+                  </div>
 
-                {showHint && step !== 3 && (
-                  <div className="hint">{getHint()}</div>
-                )}
-
-                <div className="input-container">
-                  {step === 1 && (
-                    <>
-                      <input
-                        type="text"
-                        className={`input-field ${inputStatus}`}
-                        placeholder="Introduce la marca  Ej: Bmw,Mercedes.."
-                        value={marca}
-                        onChange={(e) => handleInputChange(e, "marca")}
-                        onKeyDown={handleKeyDown}
-                      />
+                  <div className="dots-container">
+                    {vehiculoDelDia.Imagenes.slice(0, maxImageIndex + 1).map((_, index) => (
                       <button
-                        className="guess-button"
-                        onClick={handleGuess}
-                        disabled={!marca}
-                      >
-                        Adivinar
-                      </button>
-                      <div className="failed-attempts">
-                        <ul className="intentos-fallidos">
-                          {intentosFallidos.marca.slice().reverse().map((intento, idx) => (
-                            <li key={idx}>{intento}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </>
+                        key={index}
+                        className={`dot ${index === currentImageIndex ? "active" : ""}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      ></button>
+                    ))}
+                  </div>
+
+                  {showHint && step !== 3 && (
+                    <div className="alert alert-info mt-3 hint">{getHint()}</div>
                   )}
 
-                  {step === 2 && (
-                    <>
-                      <input
-                        type="text"
-                        className={`input-field ${inputStatus}`}
-                        placeholder="Introduce el modelo Ej: SL CLass,Mustang..."
-                        value={modelo}
-                        onChange={(e) => handleInputChange(e, "modelo")}
-                        onKeyDown={handleKeyDown}
-                      />
-                      <button
-                        className="guess-button"
-                        onClick={handleGuess}
-                        disabled={!modelo}
-                      >
-                        Adivinar
-                      </button>
-                      <div className="failed-attempts">
-                        <ul className="intentos-fallidos">
-                          {intentosFallidos.modelo.slice().reverse().map((intento, idx) => (
-                            <li key={idx}>{intento}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </>
-                  )}
+                  <div className="mt-3">
+                    {step >= 1 && (
+                      <>
+                        {step > 1 && (
+                          <div className="resultado-adivinado animate">
+                            Marca: <strong>{vehiculoDelDia.Marca}</strong>
+                          </div>
+                        )}
+                        {step === 1 && (
+                          <>
+                            <InputField
+                              value={marca}
+                              placeholder="Introduce la marca Ej: Bmw, Mercedes..."
+                              onChange={(e) => handleInputChange(e, "marca")}
+                              onKeyDown={handleKeyDown}
+                              status={inputStatus}
+                            />
+                            <button
+                              className="btn btn-primary w-100 mt-2 guess-button mx-auto d-block"
+                              onClick={handleGuess}
+                              disabled={!marca}
+                            >
+                              Adivinar
+                            </button>
+                            <div className="mt-2 failed-attempts">
+                              <FailedAttemptsList attempts={intentosFallidos.marca} />
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
 
-                  {step === 3 && (
-                    <>
-                      <input
-                        type="number"
-                        className={`input-field ${inputStatus}`}
-                        placeholder="Introduce el año"
-                        value={anoFabricacion}
-                        onChange={(e) => handleInputChange(e, "anoFabricacion")}
-                        onKeyDown={handleKeyDown}
-                      />
-                      <button
-                        className="guess-button"
-                        onClick={handleGuess}
-                        disabled={!anoFabricacion}
-                      >
-                        Adivinar
-                      </button>
-                      <div className="failed-attempts">
-                        <ul className="intentos-fallidos">
-                          {intentosFallidos.anoFabricacion.slice().reverse().map((intento, idx) => (
-                            <li key={idx} className={`fallido ${getAnoFallidoStyle(intento)}`}>
-                              {intento}
-                            </li>
-                          ))}
-                        </ul>
+                    {step >= 2 && (
+                      <>
+                        {step > 2 && (
+                          <div className="resultado-adivinado animate">
+                            Modelo: <strong>{vehiculoDelDia.Modelo}</strong>
+                          </div>
+                        )}
+                        {step === 2 && (
+                          <>
+                            <InputField
+                              value={modelo}
+                              placeholder="Introduce el modelo Ej: SL Class, Mustang..."
+                              onChange={(e) => handleInputChange(e, "modelo")}
+                              onKeyDown={handleKeyDown}
+                              status={inputStatus}
+                            />
+                            <button
+                              className="btn btn-primary w-100 mt-2 guess-button mx-auto d-block"
+                              onClick={handleGuess}
+                              disabled={!modelo}
+                            >
+                              Adivinar
+                            </button>
+                            <div className="mt-2 failed-attempts">
+                              <FailedAttemptsList attempts={intentosFallidos.modelo} />
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {step === 3 && (
+                      <>
+                        {isCompleted && (
+                          <div className="resultado-adivinado animate">
+                            Año: <strong>{vehiculoDelDia.AnoFabricacion}</strong>
+                          </div>
+                        )}
+                        <InputField
+                          value={anoFabricacion}
+                          placeholder="Introduce el año"
+                          onChange={(e) => handleInputChange(e, "anoFabricacion")}
+                          onKeyDown={handleKeyDown}
+                          status={inputStatus}
+                          disabled={isCompleted}
+                        />
+                        <button
+                          className="btn btn-primary w-100 mt-2 guess-button mx-auto d-block"
+                          onClick={handleGuess}
+                          disabled={!anoFabricacion}
+                        >
+                          Adivinar
+                        </button>
+                        <div className="mt-2 failed-attempts">
+                          <FailedAttemptsList
+                            attempts={intentosFallidos.anoFabricacion}
+                            getFallidoStyle={getAnoFallidoStyle}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {isCompleted && (
+                      <div className="mt-4 alert alert-success">
+                        ¡Felicidades! Has adivinado correctamente el vehículo del día.
                       </div>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

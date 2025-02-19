@@ -1,6 +1,6 @@
 /* General Styles for Juego */
 body {
-  overflow:hidden;
+  
 
 }
 
@@ -9,7 +9,7 @@ body {
 .container {
   background-color: transparent !important;
   padding: 20px;
-  min-height: 100vh;
+  min-height: 105vh;
 }
 .card {
   background-color: transparent !important; /* Fondo transparente */
@@ -20,13 +20,27 @@ body {
 .card-content {
   background-color: transparent !important; /* Fondo transparente */
 }
-/* Tamaño fijo para todas las imágenes */
-.vehicle-image, .success-image {
-  width: 60%;
-  height: 30rem;
+
+.position-relative {
+  width: 150%; /* Ocupa el 100% del ancho del contenedor padre */
+  max-width: 100%; /* Ancho máximo */
+  margin: 0 auto; /* Centrar el contenedor */
+}
+.vehicle-image {
+  width: 150% !important;
+  max-height: 400px !important;
+  border-radius: 10px !important;
+  margin: 20px auto !important;
+}
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  height: 300px;
   margin: 0 auto;
-  display: block;
-  border-radius: 5px;
+  overflow: hidden; /* Oculta las partes que sobresalgan */
 }
 
 /* Separación entre la imagen y el campo de entrada */
@@ -63,19 +77,18 @@ body {
   border-color: #28a745;
 }
 
-.failed-attempts {
-  width: 60%;
-   /* Asegura que los intentos fallidos tengan el mismo ancho */
-}
-
 /* Tamaño normal del botón de adivinar */
 .guess-button {
+  display: block;
   padding: 10px 20px;
   font-size: 16px;
   margin-top: 10px;
   border-radius: 5px;
   background-color: #3593f7;
   color: black;
+  max-width: 30%;
+  margin-left: auto; 
+  margin-right: auto;
 }
 
 .guess-button:hover {
@@ -241,25 +254,25 @@ input.error {
 }
 
 
-/*Flechas de navegacion*/
-.nav-button {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-180%);
-  
-  color: rgb(0, 0, 0);
+/*Puntos de navegacion*/
+.dot {
+  height: 10px;
+  width: 10px;
+  margin: 0 5px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.3s ease;
   border: none;
-  background: transparent;
   cursor: pointer;
-  font-size: 5rem;
 }
 
-.nav-button.left {
-  left: +450px;
+.dot.active {
+  background-color: #007bff;
 }
 
-.nav-button.right {
-  right: +450px;
+.dot:hover {
+  background-color: #0056b3;
 }
 
 /* Dark Theme Styles */
@@ -281,7 +294,25 @@ input.error {
 .dark-theme .input-field::placeholder {
   color: #aaa; /* Color del placeholder */
 }
+/* Estilos para el tema oscuro */
+.dark-theme .input-field {
+  background-color: #333; /* Fondo oscuro para inputs */
+  color: #fff; /* Texto blanco */
+  border: 1px solid #555; /* Borde más claro */
+}
 
+.dark-theme .input-field::placeholder {
+  color: #aaa; /* Color del placeholder */
+}
+
+/* Estilos para el campo de entrada cuando está enfocado */
+.dark-theme .input-field:focus {
+  background-color: #333; /* Mantener el fondo oscuro */
+  color: #fff; /* Mantener el texto blanco */
+  border: 1px solid #ffffff; /* Mantener el borde más claro */
+  outline: none; /* Eliminar el contorno predeterminado del navegador */
+  box-shadow: none; /* Eliminar cualquier sombra predeterminada */
+}
 .dark-theme .guess-button {
   background-color: #444; /* Fondo oscuro para botones */
   color: #ffffff; /* Texto blanco */
@@ -332,14 +363,6 @@ input.error {
   background-color: #444; /* Fondo más claro al pasar el ratón */
 }
 
-.dark-theme .nav-button {
-  color: #fff; /* Flechas de navegación blancas */
-}
-
-.dark-theme .nav-button:hover {
-  color: #ccc; /* Color más claro al pasar el ratón */
-}
-
 .dark-theme .hint {
   background-color: #444; /* Fondo oscuro para las pistas */
   color: #fff; /* Texto blanco */
@@ -363,15 +386,43 @@ input.error {
   border-color: #fff transparent transparent transparent; /* Color del spinner */
 }
 
+.dark-theme .title-container {
+  color:white;
+}
 
 .title-container {
   text-align: center;
   padding: 5px; /* Espaciado interno */
   margin-top: -20px;
+  margin-bottom: -35px;
 }
 
-.dark-theme .title-container {
-  color:white;
+.dots-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 200px;
+  margin-top: 10px;
 }
 
+.resultado-adivinado {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.5s ease-in-out;
+}
 
+.resultado-adivinado.animate {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media screen and (max-width: 430px) and (max-height: 932px) {
+  .intentos-fallidos {
+    max-height: 250px; 
+    font-size: 1rem; 
+  }
+}

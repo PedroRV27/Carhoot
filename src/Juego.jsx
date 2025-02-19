@@ -4,6 +4,7 @@ import { getCoches } from "./services/api";
 import "./Juego.css";
 import Header from "./Header";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import HintModal from "./HintModal"; // Importar el componente HintModal
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -46,6 +47,8 @@ const Juego = () => {
   const [errorCount, setErrorCount] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [maxImageIndex, setMaxImageIndex] = useState(0);
+  const [showHintModal, setShowHintModal] = useState(false); // Estado para controlar el modal de pista
+  const [revealedLetters, setRevealedLetters] = useState(0); // Letras reveladas
 
   useEffect(() => {
     fetchVehiculoDelDia();
@@ -159,6 +162,23 @@ const Juego = () => {
     return "";
   };
 
+  const handleShowHintModal = () => {
+    if (errorCount >= 10) {
+      const newRevealedLetters = Math.floor(errorCount / 10);
+      setRevealedLetters(newRevealedLetters);
+      setShowHintModal(true); // Abrir el modal
+    }
+  };
+
+  const getRevealedText = () => {
+    if (step === 1) {
+      return vehiculoDelDia.Marca.slice(0, revealedLetters);
+    } else if (step === 2) {
+      return vehiculoDelDia.Modelo.slice(0, revealedLetters);
+    }
+    return "";
+  };
+
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
   if (!vehiculoDelDia) {
@@ -177,9 +197,10 @@ const Juego = () => {
         <div className="row justify-content-center">
           <div className="col-md-8">
             {isCompleted ? (
-              <div className="text-center">
-                <h2 className="success-message">¡Felicidades! 🎉</h2>
-                <p>Has acertado todos los datos del vehículo del día.</p>
+              <div className="text-center success-container">
+                <h2 className="success-message">
+                  {vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} {vehiculoDelDia.AnoFabricacion}
+                </h2>
                 <img
                   src={vehiculoDelDia.Imagenes[4]}
                   alt="Vehículo del día"
@@ -210,80 +231,91 @@ const Juego = () => {
                     ))}
                   </div>
 
-                  {showHint && step !== 3 && (
-                    <div className="alert alert-info mt-3 hint">{getHint()}</div>
+                  {step >= 1 && (
+                    <div className="resultado-container">
+                      {step > 1 && (
+                        <div className="resultado-adivinado animate">
+                          Marca: <strong>{vehiculoDelDia.Marca}</strong>
+                        </div>
+                      )}
+                      {step > 2 && (
+                        <div className="resultado-adivinado animate">
+                          Modelo: <strong>{vehiculoDelDia.Modelo}</strong>
+                        </div>
+                      )}
+                      {isCompleted && (
+                        <div className="resultado-adivinado animate">
+                          Año: <strong>{vehiculoDelDia.AnoFabricacion}</strong>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   <div className="mt-3">
-                    {step >= 1 && (
+                    {step === 1 && (
                       <>
-                        {step > 1 && (
-                          <div className="resultado-adivinado animate">
-                            Marca: <strong>{vehiculoDelDia.Marca}</strong>
-                          </div>
-                        )}
-                        {step === 1 && (
-                          <>
-                            <InputField
-                              value={marca}
-                              placeholder="Introduce la marca Ej: Bmw, Mercedes..."
-                              onChange={(e) => handleInputChange(e, "marca")}
-                              onKeyDown={handleKeyDown}
-                              status={inputStatus}
-                            />
-                            <button
-                              className="btn btn-primary w-100 mt-2 guess-button mx-auto d-block"
-                              onClick={handleGuess}
-                              disabled={!marca}
-                            >
-                              Adivinar
-                            </button>
-                            <div className="mt-2 failed-attempts">
-                              <FailedAttemptsList attempts={intentosFallidos.marca} />
-                            </div>
-                          </>
-                        )}
+                        <InputField
+                          value={marca}
+                          placeholder="Introduce la marca Ej: Bmw, Mercedes..."
+                          onChange={(e) => handleInputChange(e, "marca")}
+                          onKeyDown={handleKeyDown}
+                          status={inputStatus}
+                        />
+                        <div className="d-flex w-100 h-100 gap-2">
+                          <button
+                            className="btn btn-primary flex-fill mt-2 guess-button"
+                            onClick={handleGuess}
+                            disabled={!marca}
+                          >
+                            Adivinar
+                          </button>
+                          <button
+                            className="btn btn-secondary flex-fill mt-2 hint-button"
+                            onClick={handleShowHintModal}
+                            disabled={errorCount < 10}
+                          >
+                            Pista
+                          </button>
+                        </div>
+                        <div className="mt-2 failed-attempts">
+                          <FailedAttemptsList attempts={intentosFallidos.marca} />
+                        </div>
                       </>
                     )}
 
-                    {step >= 2 && (
+                    {step === 2 && (
                       <>
-                        {step > 2 && (
-                          <div className="resultado-adivinado animate">
-                            Modelo: <strong>{vehiculoDelDia.Modelo}</strong>
-                          </div>
-                        )}
-                        {step === 2 && (
-                          <>
-                            <InputField
-                              value={modelo}
-                              placeholder="Introduce el modelo Ej: SL Class, Mustang..."
-                              onChange={(e) => handleInputChange(e, "modelo")}
-                              onKeyDown={handleKeyDown}
-                              status={inputStatus}
-                            />
-                            <button
-                              className="btn btn-primary w-100 mt-2 guess-button mx-auto d-block"
-                              onClick={handleGuess}
-                              disabled={!modelo}
-                            >
-                              Adivinar
-                            </button>
-                            <div className="mt-2 failed-attempts">
-                              <FailedAttemptsList attempts={intentosFallidos.modelo} />
-                            </div>
-                          </>
-                        )}
+                        <InputField
+                          value={modelo}
+                          placeholder="Introduce el modelo Ej: SL Class, Mustang..."
+                          onChange={(e) => handleInputChange(e, "modelo")}
+                          onKeyDown={handleKeyDown}
+                          status={inputStatus}
+                        />
+                        <div className="d-flex w-100 h-100 gap-2">
+                          <button
+                            className="btn btn-primary flex-fill mt-2 guess-button"
+                            onClick={handleGuess}
+                            disabled={!modelo}
+                          >
+                            Adivinar
+                          </button>
+                          <button
+                            className="btn btn-secondary flex-fill mt-2 hint-button"
+                            onClick={handleShowHintModal}
+                            disabled={errorCount < 10}
+                          >
+                            Pista
+                          </button>
+                        </div>
+                        <div className="mt-2 failed-attempts">
+                          <FailedAttemptsList attempts={intentosFallidos.modelo} />
+                        </div>
                       </>
                     )}
 
                     {step === 3 && (
                       <>
-                        {isCompleted && (
-                          <div className="resultado-adivinado animate">
-                            Año: <strong>{vehiculoDelDia.AnoFabricacion}</strong>
-                          </div>
-                        )}
                         <InputField
                           value={anoFabricacion}
                           placeholder="Introduce el año"
@@ -320,6 +352,14 @@ const Juego = () => {
           </div>
         </div>
       </div>
+
+      {/* Usar el componente HintModal */}
+      <HintModal
+        show={showHintModal}
+        onHide={() => setShowHintModal(false)}
+        revealedText={getRevealedText()}
+        attemptsRemaining={10 - (errorCount % 10)}
+      />
     </div>
   );
 };

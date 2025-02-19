@@ -1,12 +1,52 @@
-/* General Styles for Juego */
-body {
-  
+@font-face {
+  font-family: 'Kanit';
+  src: url('./fonts/Kanit/Kanit-Medium.ttf') format('truetype');
+ 
+  font-style: normal;
+}
+@font-face {
+  font-family: 'KanitD';
+  src: url('./fonts/Kanit/Kanit-ExtraLight.ttf') format('truetype');
+ 
+  font-style: normal;
+}
 
+
+body {
+  font-family: 'Kanit', sans-serif;
+}
+h1, h2, .game-title {
+  font-family: 'Kanit', sans-serif;
+}
+
+.success-message {
+  background:transparent;
+  color: #000000; /* Texto blanco para contraste */
+  padding: 12px 16px;
+
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 400px;
+  margin: 20px auto;
+}
+
+.success-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh; /* Ajusta según el tamaño de la pantalla */
 }
 
 
 /* Fondo transparente del contenedor */
 .container {
+  font-family: 'Kanit', sans-serif;
   background-color: transparent !important;
   padding: 20px;
   min-height: 105vh;
@@ -78,21 +118,39 @@ body {
 }
 
 /* Tamaño normal del botón de adivinar */
+.hint-button{
+  display: block;
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-top: 10px;
+  border-radius: 5px;
+  background-color: #ffc40077 !important;
+  color: black;
+  border:1px solid yellow !important;
+  max-width: 50%;
+  margin-left: 0; 
+  margin-right: 0;
+}
 .guess-button {
   display: block;
   padding: 10px 20px;
   font-size: 16px;
   margin-top: 10px;
   border-radius: 5px;
-  background-color: #3593f7;
-  color: black;
-  max-width: 30%;
-  margin-left: auto; 
-  margin-right: auto;
+  background-color: #ffffff !important;
+  color: rgb(0, 0, 0) !important;
+  border:1px solid black !important ;
+  max-width: 50%;
+  margin-left: 0; 
+  margin-right: 0;
 }
 
 .guess-button:hover {
-  background-color: #0056b3;
+  background-color: #0a0a0a;
+}
+
+.guess-button:disabled{
+  background-color: #000000;
 }
 /* Input Feedback Styles */
 input.success {
@@ -256,23 +314,24 @@ input.error {
 
 /*Puntos de navegacion*/
 .dot {
-  height: 10px;
-  width: 10px;
+  height: 15px;
+  width: 15px;
   margin: 0 5px;
-  background-color: #bbb;
+  background-color: #fdfdfd;
   border-radius: 50%;
   display: inline-block;
   transition: background-color 0.3s ease;
   border: none;
   cursor: pointer;
+  border: 1px solid #444444;
 }
 
 .dot.active {
-  background-color: #007bff;
+  background-color: #000000;
 }
 
 .dot:hover {
-  background-color: #0056b3;
+  background-color: #3a3a3a;
 }
 
 /* Dark Theme Styles */
@@ -314,13 +373,21 @@ input.error {
   box-shadow: none; /* Eliminar cualquier sombra predeterminada */
 }
 .dark-theme .guess-button {
-  background-color: #444; /* Fondo oscuro para botones */
-  color: #ffffff; /* Texto blanco */
-  border: 1px solid #555; /* Borde más claro */
+  background-color: #0c0c0c !important; /* Fondo oscuro para botones */
+  color: #ffffff !important ; /* Texto blanco */
+  border: 1px solid #ffffff !important; /* Borde más claro */
 }
 
 .dark-theme .guess-button:hover {
-  background-color: #555; /* Fondo más claro al pasar el ratón */
+  background-color: #555 !important; /* Fondo más claro al pasar el ratón */
+}
+
+.dark-theme .guess-button:disabled {
+  background-color: #1a1a1a; /* Un gris oscuro para indicar desactivado */
+  color: #777777; /* Texto más apagado */
+  border: 1px solid #444444; /* Borde más sutil */
+  cursor: not-allowed; /* Cambia el cursor para mostrar que no es clickeable */
+  opacity: 0.6; /* Reduce la opacidad para diferenciarlo */
 }
 
 .dark-theme .failed-attempts {
@@ -342,7 +409,7 @@ input.error {
 
 .dark-theme .fallido.custom-bg-warning-light {
   border: 1px solid rgb(200, 255, 0);
-  background-color: rgb(51, 65, 0) !important;
+  background-color: rgb(45, 58, 0) !important;
   color: rgb(255, 255, 255) !important;
 }
 
@@ -389,7 +456,29 @@ input.error {
 .dark-theme .title-container {
   color:white;
 }
+.dark-theme .dot {
+  height: 15px;
+  width: 15px;
+  margin: 0 5px;
+  background-color: #000000;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.3s ease;
+  border: none;
+  cursor: pointer;
+  border: 1px solid #444444;
+}
 
+.dark-theme .dot.active {
+  background-color: #ffffff;
+}
+
+.dark-theme .dot:hover {
+  background-color: #a7a7a7;
+}
+.dark-theme .success-message{
+  color: white;
+}
 .title-container {
   text-align: center;
   padding: 5px; /* Espaciado interno */
@@ -403,21 +492,70 @@ input.error {
   align-items: center;
   margin: 0 auto;
   max-width: 200px;
-  margin-top: 10px;
+  margin-top: -5px;
 }
 
-.resultado-adivinado {
-  font-size: 16px;
+.resultado-container {
+  display: flex;
+  flex-direction: row; /* Mantiene los elementos en fila */
+  gap: 5px; /* Espacio entre los elementos */
+  flex-wrap: wrap; /* Permite que se ajusten en varias líneas si no hay espacio */
+  
+}
+.resultado-adivinado{
+  font-family: 'KanitD';
+  margin-top: 20px;
+  margin-bottom: -12px;
+  color: rgb(0, 0, 0);
+  background-color: #bfffbc;
+  border:2px solid #0ad100;
+  padding: 5px 10px;
+  border-radius: 5px;
   font-weight: bold;
-  margin-bottom: 8px;
+  text-align: center;
   opacity: 0;
-  transform: translateY(-10px);
-  transition: all 0.5s ease-in-out;
+  transform: translateY(20px);
+  animation: fadeInUp 0.5s ease-out forwards;
+  white-space: nowrap; 
+}
+.dark-theme .resultado-adivinado {
+  margin-top: 20px;
+  margin-bottom: -12px;
+  color: white;
+  background-color: #142713;
+  border:1px solid #0dff00;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.5s ease-out forwards;
+  white-space: nowrap; /* Evita saltos de línea dentro del div */
 }
 
-.resultado-adivinado.animate {
-  opacity: 1;
-  transform: translateY(0);
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .resultado-adivinado {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  .resultado-container {
+    gap: 0px;
+    padding-bottom: 4px !important;
+  }
 }
 
 @media screen and (max-width: 430px) and (max-height: 932px) {
@@ -426,3 +564,12 @@ input.error {
     font-size: 1rem; 
   }
 }
+
+.guess-button,
+.hint-button {
+  flex: 1;
+  min-width: 0;
+  height: 45px; /* Ajusta según sea necesario */
+}
+
+

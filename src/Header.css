@@ -1,3 +1,41 @@
+@font-face {
+  font-family: 'Grechen';
+  src: url('./fonts/GrechenFuemen/GrechenFuemen-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kanit';
+  src: url('./fonts/Kanit/Kanit-Bold.ttf') format('truetype');
+  font-weight: 700; 
+  font-style: normal;
+}
+
+.language-button{
+  font-family: 'Kanit', sans-serif;
+}
+
+.app-name {
+  font-family: 'Grechen', sans-serif;
+  font-size: 32px; /* Tamaño grande */
+  font-weight: bold;
+  line-height: 1.2; 
+  margin: 0; 
+  padding: 0; 
+}
+
+.header-left {
+  width: auto; 
+  overflow: visible; 
+}
+
+
+body{
+  font-family: 'Kanit', sans-serif;
+}
+
+
 :root {
     --header-bg: #ffffff;
     --text-color: #000000;
@@ -22,11 +60,6 @@
     margin: 0 auto;
   }
   
-  .header-left .app-name {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--text-color);
-  }
   
   .header-right {
     display: flex;

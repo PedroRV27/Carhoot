@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Router>
         <Routes>
           <Route path="/" element={<Juego />} /> {/* Ruta principal */}
-          <Route path="/Radmin" element={<App />} /> {/* Ruta para el admin */}
+          <Route path="/mvm" element={<App />} /> {/* Ruta para el admin */}
         </Routes>
       </Router>
     </AppProvider>

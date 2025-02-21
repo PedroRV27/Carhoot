@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useContext } from "react";
 import Modal from "react-bootstrap/Modal";
+import { AppContext } from "./context/AppContext"; // Importa el contexto
 import "./HintModal.css"; // Importa los estilos
 
 const HintModal = ({ show, onHide, revealedText, attemptsRemaining }) => {
+  const { theme } = useContext(AppContext); // Obtén el tema actual del contexto
+
   return (
-    <Modal show={show} onHide={onHide} centered className="dark-modal">
+    <Modal show={show} onHide={onHide} centered className={`${theme}-modal`}>
       <Modal.Header closeButton>
         <Modal.Title>Pista</Modal.Title>
       </Modal.Header>

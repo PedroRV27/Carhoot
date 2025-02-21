@@ -146,11 +146,13 @@ h1, h2, .game-title {
 }
 
 .guess-button:hover {
-  background-color: #0a0a0a;
+  background-color: #f1f1f1 !important; /* Color del botón primario al pasar el mouse */
+  border-color: #7a7a7a !important;
 }
 
 .guess-button:disabled{
-  background-color: #000000;
+  background-color: #ecebeb !important;
+  color:gray !important;
 }
 /* Input Feedback Styles */
 input.success {
@@ -499,13 +501,14 @@ input.error {
   display: flex;
   flex-direction: row; /* Mantiene los elementos en fila */
   gap: 5px; /* Espacio entre los elementos */
-  flex-wrap: wrap; /* Permite que se ajusten en varias líneas si no hay espacio */
+  flex-wrap: wrap;
+  margin-bottom: -17px;
   
 }
 .resultado-adivinado{
   font-family: 'KanitD';
   margin-top: 20px;
-  margin-bottom: -12px;
+  margin-bottom: -35px;
   color: rgb(0, 0, 0);
   background-color: #bfffbc;
   border:2px solid #0ad100;
@@ -550,11 +553,12 @@ input.error {
   .resultado-adivinado {
     width: 100%;
     padding: 8px;
-    margin-bottom: 8px;
+    margin-bottom: -12px;
   }
   .resultado-container {
     gap: 0px;
     padding-bottom: 4px !important;
+    margin-bottom: -18px;
   }
 }
 
@@ -565,11 +569,134 @@ input.error {
   }
 }
 
-.guess-button,
-.hint-button {
+.guess-button{
   flex: 1;
   min-width: 0;
   height: 45px; /* Ajusta según sea necesario */
 }
 
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Contenedor del grupo de entrada y botón */
+.input-group {
+  display: flex;
+  align-items: center; /* Alinea verticalmente */
+  gap: 10px; /* Espacio entre el input y el botón */
+  width: 100%; /* Ocupa todo el ancho disponible */
+}
+
+/* Contenedor del campo de entrada */
+.input-container {
+  flex: 1; /* Ocupa el espacio restante (90%) */
+  margin: 0 auto;
+  margin-top: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Estilos para el campo de entrada */
+.input-field {
+  font-size: 1rem;
+  padding: 1rem;
+  width: 100%; /* Ocupa todo el ancho del contenedor */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+  display: block;
+  align-items: center;
+  height: 45px; /* Misma altura que el botón */
+}
+
+.input-field.error {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+}
+
+.input-field.success {
+  background-color: #d4edda;
+  border-color: #28a745;
+}
+
+/* Estilos básicos del botón de pista (mantén estos) */
+.hint-button {
+  display: block;
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-top: 20px;
+  border-radius: 5px !important;
+  background-color: #ffc40077 !important;
+  color: black;
+  border: 1px solid yellow !important;
+  height: 45px;
+  width: 10% !important;
+  min-width: 80px;
+  flex-shrink: 0;
+  transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease; /* Nueva transición */
+}
+
+/* Botón desactivado */
+.hint-button:disabled {
+  background-color: #e9ecef !important; /* Fondo gris */
+  border-color: #ced4da !important; /* Borde gris */
+}
+
+/* Estilo de la bombilla cuando el botón está desactivado */
+.hint-button:disabled .text-muted {
+  color: #6c757d; /* Color gris para la bombilla */
+}
+
+/* Botón activado */
+.hint-button:not(:disabled) {
+  background-color: #ffefbe !important;  /* Fondo amarillo */
+  border-color: hsl(45, 100%, 69%) !important; /* Borde amarillo */
+  animation: button-pop 0.3s ease; /* Animación al activarse */
+}
+
+.dark-theme .hint-button:not(:disabled){
+  background-color: #271900 !important;
+}
+/* Animación de "pop" para el botón */
+@keyframes button-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Estilo base para el ícono de la bombilla */
+.text-warning {
+  color: #ffc107; /* Color amarillo */
+  transition: color 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+}
+
+/* Animación de brillo */
+@keyframes glow {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(255, 193, 7, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(255, 193, 7, 0.7));
+  }
+  100% {
+    filter: drop-shadow(0 0 5px rgba(255, 193, 7, 0));
+  }
+}
+
+/* Aplica la animación cuando el ícono tiene la clase .text-warning */
+.text-warning.active {
+  animation: glow 1.5s infinite; /* Brillo continuo */
+  transform: scale(1.1); /* Ligero aumento de tamaño */
+}
 

@@ -1,32 +1,65 @@
 /* Estilos para el modal en tema oscuro */
 .dark-modal .modal-content {
-    background-color: #333; /* Fondo oscuro */
-    color: #fff; /* Texto claro */
-    border: 1px solid #444; /* Borde más claro */
-  }
-  
-  .dark-modal .modal-header {
-    border-bottom: 1px solid #444; /* Borde inferior del header */
-  }
-  
-  .dark-modal .modal-footer {
-    border-top: 1px solid #444; /* Borde superior del footer */
-  }
-  
-  .dark-modal .close {
-    color: #fff; /* Color del botón de cerrar */
-  }
-  
-  .dark-modal .close:hover {
-    color: #ccc; /* Color del botón de cerrar al pasar el mouse */
-  }
-  
-  .dark-modal .btn-primary {
-    background-color: #007bff; /* Color del botón primario */
-    border-color: #007bff;
-  }
-  
-  .dark-modal .btn-primary:hover {
-    background-color: #0056b3; /* Color del botón primario al pasar el mouse */
-    border-color: #004080;
-  }
+  background-color: #333; /* Fondo oscuro */
+  color: #fff; /* Texto claro */
+  border: 1px solid #444; /* Borde más claro */
+}
+
+.dark-modal .modal-header {
+  border-bottom: 1px solid #444; /* Borde inferior del header */
+}
+
+.dark-modal .modal-footer {
+  border-top: 1px solid #444; /* Borde superior del footer */
+}
+
+.dark-modal .close {
+  color: #fff; /* Color del botón de cerrar */
+}
+
+.dark-modal .close:hover {
+  color: #ccc; /* Color del botón de cerrar al pasar el mouse */
+}
+
+.dark-modal .btn-primary {
+  background-color: #000000; /* Color del botón primario */
+  border-color: #ffffff;
+}
+
+.dark-modal .btn-primary:hover {
+  background-color: #555 !important;
+}
+
+/* Estilos para el modal en tema claro */
+.light-modal .modal-content {
+  background-color: #fff; /* Fondo claro */
+  color: #000; /* Texto oscuro */
+  border: 1px solid #ddd; /* Borde más oscuro */
+}
+
+.light-modal .modal-header {
+  border-bottom: 1px solid #ddd; /* Borde inferior del header */
+}
+
+.light-modal .modal-footer {
+  border-top: 1px solid #ddd; /* Borde superior del footer */
+}
+
+.light-modal .close {
+  color: #000; /* Color del botón de cerrar */
+}
+
+.light-modal .close:hover {
+  color: #555; /* Color del botón de cerrar al pasar el mouse */
+}
+
+.light-modal .btn-primary {
+  background-color: #ffffff; /* Color del botón primario */
+  border-color: #000000;
+  color: #000;
+}
+
+.light-modal .btn-primary:hover {
+  background-color: #f1f1f1; /* Color del botón primario al pasar el mouse */
+  border-color: #4d4d4d;
+}

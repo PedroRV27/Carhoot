@@ -1,4 +1,10 @@
 @font-face {
+  font-family: 'Grechen';
+  src: url('./fonts/GrechenFuemen/GrechenFuemen-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
   font-family: 'Kanit';
   src: url('./fonts/Kanit/Kanit-Medium.ttf') format('truetype');
  
@@ -12,11 +18,12 @@
 }
 
 
-body {
+body,h2 {
   font-family: 'Kanit', sans-serif;
 }
-h1, h2, .game-title {
-  font-family: 'Kanit', sans-serif;
+h1,.game-title {
+  font-family: 'Grechen', sans-serif;
+  font-weight: bold;
 }
 
 .success-message {
@@ -166,6 +173,8 @@ input.error {
   border-color: #dc3545;    /* Red border */
   animation: vibrate 0.3s linear;
 }
+
+
 
 @keyframes vibrate {
   0% { transform: translateX(0); }
@@ -427,6 +436,11 @@ input.error {
   color: rgb(255, 255, 255) !important;
 }
 
+.dark-theme .input-field.error{
+  color:rgb(255, 255, 255);
+  background-color: #352224;
+}
+
 
 .dark-theme .intentos-fallidos li:hover {
   background-color: #444; /* Fondo más claro al pasar el ratón */
@@ -502,13 +516,20 @@ input.error {
   flex-direction: row; /* Mantiene los elementos en fila */
   gap: 5px; /* Espacio entre los elementos */
   flex-wrap: wrap;
-  margin-bottom: -17px;
+  margin-bottom: 10px;
+  
+}
+.dark-theme .resultado-container {
+  display: flex;
+  flex-direction: row; /* Mantiene los elementos en fila */
+  gap: 5px; /* Espacio entre los elementos */
+  flex-wrap: wrap;
+  margin-bottom: -18px;
   
 }
 .resultado-adivinado{
   font-family: 'KanitD';
-  margin-top: 20px;
-  margin-bottom: -35px;
+  margin-bottom: -15px;
   color: rgb(0, 0, 0);
   background-color: #bfffbc;
   border:2px solid #0ad100;
@@ -522,11 +543,11 @@ input.error {
   white-space: nowrap; 
 }
 .dark-theme .resultado-adivinado {
-  margin-top: 20px;
-  margin-bottom: -12px;
+  font-family: 'KanitD';
+  margin-bottom: -15px;
   color: white;
   background-color: #142713;
-  border:1px solid #0dff00;
+  border:2px solid #09af00;
   padding: 5px 10px;
   border-radius: 5px;
   font-weight: bold;
@@ -552,7 +573,6 @@ input.error {
 @media (max-width: 768px) {
   .resultado-adivinado {
     width: 100%;
-    padding: 8px;
     margin-bottom: -12px;
   }
   .resultado-container {
@@ -587,7 +607,8 @@ input.error {
   display: flex;
   align-items: center; /* Alinea verticalmente */
   gap: 10px; /* Espacio entre el input y el botón */
-  width: 100%; /* Ocupa todo el ancho disponible */
+  width: 100%;
+  margin-top: -17px; /* Ocupa todo el ancho disponible */
 }
 
 /* Contenedor del campo de entrada */
@@ -700,3 +721,35 @@ input.error {
   transform: scale(1.1); /* Ligero aumento de tamaño */
 }
 
+
+/* Estilos para el botón de Políticas de Privacidad */
+.privacy-policy-button {
+  font-family: 'Kanit', sans-serif; /* Aplicar la fuente Kanit */
+  font-size: 14px; /* Tamaño de la fuente */
+  font-weight: 200;/* Peso de la fuente (Medium) */
+  color: inherit; /* Heredar el color del texto del tema */
+  background: none; /* Sin fondo */
+  border: none; /* Sin borde */
+  padding: 0; /* Sin padding */
+  cursor: pointer; /* Cambiar el cursor al pasar el mouse */
+  transition: color 0.3s ease; /* Transición suave para el color */
+  text-decoration: none; /* Sin subrayado */
+}
+
+/* Estilos para el tema claro */
+.privacy-policy-button.light-theme {
+  color: #000000; /* Color azul para el tema claro */
+}
+
+.privacy-policy-button.light-theme:hover {
+  color: #919191; /* Color azul más oscuro al pasar el mouse */
+}
+
+/* Estilos para el tema oscuro */
+.privacy-policy-button.dark-theme {
+  color: #fff; /* Color blanco para el tema oscuro */
+}
+
+.privacy-policy-button.dark-theme:hover {
+  color: #ccc; /* Color gris claro al pasar el mouse */
+}

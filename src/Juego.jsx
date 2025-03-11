@@ -5,8 +5,10 @@ import "./Juego.css";
 import Header from "./Header";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import HintModal from "./HintModal"; 
+import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
+
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -51,6 +53,7 @@ const Juego = () => {
   const [maxImageIndex, setMaxImageIndex] = useState(0);
   const [showHintModal, setShowHintModal] = useState(false); // Estado para controlar el modal de pista
   const [revealedLetters, setRevealedLetters] = useState(0); // Letras reveladas
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false); 
 
   useEffect(() => {
     fetchVehiculoDelDia();
@@ -314,16 +317,6 @@ const Juego = () => {
                             disabled={isCompleted}
                           />
                         </div>
-                        <button
-                          className="btn btn-secondary hint-button"
-                          onClick={handleShowHintModal}
-                          disabled={errorCount < 10}
-                        >
-                          <FontAwesomeIcon
-                            icon={faLightbulb}
-                            className={errorCount < 10 ? "text-muted" : "text-warning active"}
-                          />
-                        </button>
                       </div>
                     )}
   
@@ -360,6 +353,23 @@ const Juego = () => {
           </div>
         </div>
       </div>
+
+      {/* Botón para mostrar las políticas de privacidad */}
+      <div className="text-center mt-4">
+        <button
+          className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
+          onClick={() => setShowPrivacyPolicy(true)}
+        >
+          Políticas de Privacidad
+        </button>
+      </div>
+
+      {/* Modal de políticas de privacidad */}
+      <PrivacyPolicyModal
+        show={showPrivacyPolicy}
+        onHide={() => setShowPrivacyPolicy(false)}
+        theme={theme}
+      />
   
       {/* Usar el componente HintModal */}
       <HintModal

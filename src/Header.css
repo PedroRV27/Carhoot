@@ -104,6 +104,9 @@ body{
     background-color: var(--text-color);
     color: var(--header-bg);
   }
+
+
+
   
   /* Estilos para móviles y tablets */
   @media (max-width: 768px) {

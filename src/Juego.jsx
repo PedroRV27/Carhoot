@@ -9,7 +9,6 @@ import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
 
-
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
     type="text"
@@ -49,7 +48,6 @@ const Juego = () => {
     anoFabricacion: [],
   });
   const [errorCount, setErrorCount] = useState(0);
-  const [showHint, setShowHint] = useState(false);
   const [maxImageIndex, setMaxImageIndex] = useState(0);
   const [showHintModal, setShowHintModal] = useState(false); // Estado para controlar el modal de pista
   const [revealedLetters, setRevealedLetters] = useState(0); // Letras reveladas
@@ -106,7 +104,7 @@ const Juego = () => {
         setMarca("");
         setInputStatus("");
         setErrorCount(0);
-        setShowHint(false);
+        setRevealedLetters(0); // Reiniciar letras reveladas al pasar al siguiente paso
       }, 800);
     } else if (step === 1) {
       setInputStatus("error");
@@ -119,7 +117,7 @@ const Juego = () => {
         setModelo("");
         setInputStatus("");
         setErrorCount(0);
-        setShowHint(false);
+        setRevealedLetters(0); // Reiniciar letras reveladas al pasar al siguiente paso
       }, 800);
     } else if (step === 2) {
       setInputStatus("error");
@@ -144,8 +142,9 @@ const Juego = () => {
       setTimeout(() => setInputStatus(""), 300);
     }
 
-    if (errorCount + 1 >= 7 && step !== 3) {
-      setShowHint(true);
+    // Desbloquear una nueva letra cada 3 intentos fallidos después de 5 intentos
+    if (errorCount + 1 >= 5 && (errorCount + 1 - 5) % 3 === 0) {
+      setRevealedLetters((prev) => prev + 1);
     }
   };
 
@@ -158,20 +157,11 @@ const Juego = () => {
     }
   };
 
-  const getHint = () => {
-    if (step === 1) {
-      return `Pista: La marca comienza con "${vehiculoDelDia.Marca[0]}"`;
-    } else if (step === 2) {
-      return `Pista: El modelo comienza con "${vehiculoDelDia.Modelo[0]}"`;
-    }
-    return "";
-  };
-
   const handleShowHintModal = () => {
-    if (errorCount >= 10) {
-      const newRevealedLetters = Math.floor(errorCount / 10);
+    if (errorCount >= 5) {
+      const newRevealedLetters = Math.floor((errorCount - 5) / 3) + 1;
       setRevealedLetters(newRevealedLetters);
-      setShowHintModal(true); // Abrir el modal
+      setShowHintModal(true); // Abrir el modal al hacer clic en el botón
     }
   };
 
@@ -271,11 +261,11 @@ const Juego = () => {
                         <button
                           className="btn btn-secondary hint-button"
                           onClick={handleShowHintModal}
-                          disabled={errorCount < 10}
+                          disabled={errorCount < 5}
                         >
                           <FontAwesomeIcon
                             icon={faLightbulb}
-                            className={errorCount < 10 ? "text-muted" : "text-warning active"}
+                            className={errorCount < 5 ? "text-muted" : "text-warning active"}
                           />
                         </button>
                       </div>
@@ -295,11 +285,11 @@ const Juego = () => {
                         <button
                           className="btn btn-secondary hint-button"
                           onClick={handleShowHintModal}
-                          disabled={errorCount < 10}
+                          disabled={errorCount < 5}
                         >
                           <FontAwesomeIcon
                             icon={faLightbulb}
-                            className={errorCount < 10 ? "text-muted" : "text-warning active"}
+                            className={errorCount < 5 ? "text-muted" : "text-warning active"}
                           />
                         </button>
                       </div>
@@ -376,7 +366,7 @@ const Juego = () => {
         show={showHintModal}
         onHide={() => setShowHintModal(false)}
         revealedText={getRevealedText()}
-        attemptsRemaining={10 - (errorCount % 10)}
+        attemptsRemaining={3 - ((errorCount - 5) % 3)}
       />
     </div>
   );

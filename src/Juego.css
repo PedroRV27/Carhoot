@@ -574,6 +574,7 @@ input.error {
   .resultado-adivinado {
     width: 100%;
     margin-bottom: -12px;
+    margin-top: 8px;
   }
   .resultado-container {
     gap: 0px;

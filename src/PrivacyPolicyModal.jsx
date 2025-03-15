@@ -6,7 +6,7 @@ const PrivacyPolicyModal = ({ show, onHide, theme }) => {
     <Modal
       show={show}
       onHide={onHide}
-      size="lg"
+      size="xl"
       centered
       className={theme === "dark" ? "dark-modal" : "light-modal"}
     >

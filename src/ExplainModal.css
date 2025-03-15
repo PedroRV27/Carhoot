@@ -1,0 +1,127 @@
+/* Estilos base del modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+  }
+  
+  .modal-close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .modal-footer {
+    margin-top: 20px;
+    text-align: right;
+  }
+  
+  .btn-primary {
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  /* Estilos para el modal en tema oscuro */
+  .dark-modal {
+    background-color: #333; /* Fondo oscuro */
+    color: #fff; /* Texto claro */
+    border: 1px solid #444; /* Borde más claro */
+  }
+  
+  .dark-modal .modal-close-button {
+    color: #fff; /* Color del botón de cerrar */
+  }
+  
+  .dark-modal .modal-close-button:hover {
+    color: #ccc; /* Color del botón de cerrar al pasar el mouse */
+  }
+  
+  .dark-modal .btn-primary {
+    background-color: #000000; /* Color del botón primario */
+    border-color: #ffffff;
+    color: #fff;
+  }
+  
+  .dark-modal .btn-primary:hover {
+    background-color: #555 !important;
+  }
+  
+  /* Estilos para el modal en tema claro */
+  .light-modal {
+    background-color: #fff; /* Fondo claro */
+    color: #000; /* Texto oscuro */
+    border: 1px solid #ddd; /* Borde más oscuro */
+  }
+  
+  .light-modal .modal-close-button {
+    color: #000; /* Color del botón de cerrar */
+  }
+  
+  .light-modal .modal-close-button:hover {
+    color: #555; /* Color del botón de cerrar al pasar el mouse */
+  }
+  
+  .light-modal .btn-primary {
+    background-color: #ffffff; /* Color del botón primario */
+    border-color: #000000;
+    color: #000;
+  }
+  
+  .light-modal .btn-primary:hover {
+    background-color: #f1f1f1; /* Color del botón primario al pasar el mouse */
+    border-color: #4d4d4d;
+  }
+
+  /* Fondo oscuro transparente */
+.modal-backdrop-transparent {
+    background-color: transparent !important; /* Fondo oscuro transparente */
+  }
+  
+  /* Estilos para el modal */
+  .explain-modal {
+    background-color: transparent !important; /* Fondo del modal transparente */
+    border: none; /* Elimina el borde del modal */
+    box-shadow: none; /* Elimina la sombra del modal */
+  }
+  
+  /* Estilos para el encabezado del modal */
+  .modal-header-custom {
+    background-color: white; /* Fondo del encabezado */
+    border-bottom: 1px solid #ddd; /* Borde inferior */
+    border-radius: 10px 10px 0 0; /* Bordes redondeados en la parte superior */
+  }
+  
+  /* Estilos para el cuerpo del modal */
+  .modal-body-custom {
+    background-color: white; /* Fondo del cuerpo */
+    padding: 20px; /* Espaciado interno */
+  }
+  
+  /* Estilos para el pie del modal */
+  .modal-footer-custom {
+    background-color: white; /* Fondo del pie */
+    border-top: 1px solid #ddd; /* Borde superior */
+    border-radius: 0 0 10px 10px; /* Bordes redondeados en la parte inferior */
+  }

@@ -1,12 +1,13 @@
 /* Estilos para el modal en tema oscuro */
 .dark-modal .modal-content {
-  background-color: #333; /* Fondo oscuro */
-  color: #fff; /* Texto claro */
+  background-color:#444 ; /* Fondo oscuro */
+  color: #ececec; /* Texto claro */
   border: 1px solid #444; /* Borde más claro */
 }
 
 .dark-modal .modal-header {
-  border-bottom: 1px solid #444; /* Borde inferior del header */
+  border-bottom: 1px solid #444;
+  background-color:#444 ; 
 }
 
 .dark-modal .modal-footer {
@@ -24,15 +25,16 @@
 .dark-modal .btn-primary {
   background-color: #000000; /* Color del botón primario */
   border-color: #ffffff;
+  color: #fff; /* Texto del botón en claro */
 }
 
 .dark-modal .btn-primary:hover {
-  background-color: #555 !important;
+  background-color: #555 !important; /* Color del botón primario al pasar el mouse */
 }
 
 /* Estilos para el modal en tema claro */
 .light-modal .modal-content {
-  background-color: #fff; /* Fondo claro */
+   /* Fondo claro */
   color: #000; /* Texto oscuro */
   border: 1px solid #ddd; /* Borde más oscuro */
 }
@@ -56,10 +58,20 @@
 .light-modal .btn-primary {
   background-color: #ffffff; /* Color del botón primario */
   border-color: #000000;
-  color: #000;
+  color: #000; /* Texto del botón en oscuro */
 }
 
 .light-modal .btn-primary:hover {
   background-color: #f1f1f1; /* Color del botón primario al pasar el mouse */
   border-color: #4d4d4d;
+}
+
+/* Estilos para hacer el fondo del modal transparente */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important; /* Fondo semitransparente */
+}
+
+/* Hacer que el contenedor del modal sea transparente mientras mantiene el contenido con su color */
+.modal {
+  background-color: transparent !important;
 }

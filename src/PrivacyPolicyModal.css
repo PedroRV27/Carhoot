@@ -1,79 +1,114 @@
-/* Estilos para el tamaño y posición del modal (80% del ancho) */
-.modal-dialog {
-  max-width: 80% !important;
-  width: 80% !important;
-  margin: 1.75rem auto;
+/* PrivacyPolicyModal.css */
+
+/* Overlay que cubre toda la pantalla */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
 }
 
-/* Resto de estilos para el tema claro */
-.light-modal .modal-content {
-  background-color: #fff; /* Fondo claro */
-  color: #000; /* Texto oscuro */
-  border: 1px solid #ddd; /* Borde claro */
-}
-  
-.light-modal .modal-header {
-  border-bottom: 1px solid #ddd; /* Borde inferior del header */
-}
-  
-.light-modal .modal-footer {
-  border-top: 1px solid #ddd; /* Borde superior del footer */
-}
-  
-.light-modal .close {
-  color: #000; /* Color del botón de cerrar */
-}
-  
-.light-modal .close:hover {
-  color: #555; /* Color del botón de cerrar al pasar el mouse */
-}
-  
-.light-modal .btn-primary {
-  background-color: #007bff; /* Color del botón primario */
-  border-color: #007bff;
-}
-  
-.light-modal .btn-primary:hover {
-  background-color: #0056b3; /* Color del botón primario al pasar el mouse */
-  border-color: #0056b3;
-}
-  
-/* Estilos para el modal en tema oscuro */
-.dark-modal .modal-content {
-  background-color: #333; /* Fondo oscuro */
-  color: #fff; /* Texto claro */
-  border: 1px solid #444; /* Borde más claro */
-}
-  
-.dark-modal .modal-header {
-  border-bottom: 1px solid #444; /* Borde inferior del header */
-}
-  
-.dark-modal .modal-footer {
-  border-top: 1px solid #444; /* Borde superior del footer */
-}
-  
-.dark-modal .close {
-  color: #fff; /* Color del botón de cerrar */
-}
-  
-.dark-modal .close:hover {
-  color: #ccc; /* Color del botón de cerrar al pasar el mouse */
-}
-  
-.dark-modal .btn-primary {
-  background-color: #000000; /* Color del botón primario */
-  border-color: #ffffff;
-}
-  
-.dark-modal .btn-primary:hover {
-  background-color: #555 !important;
+/* Contenedor del modal - centrado y con ancho controlado */
+.custom-modal {
+  background-color: #fff;
+  width: 80%;
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
 }
 
-/* Opcional: Para pantallas pequeñas */
+/* Encabezado del modal */
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.custom-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Cuerpo del modal con scroll si es necesario */
+.custom-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Pie del modal */
+.custom-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Botón de aceptar */
+.accept-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.accept-button:hover {
+  background-color: #0069d9;
+}
+
+/* Tema oscuro */
+.dark-theme {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-theme .custom-modal-header {
+  border-bottom: 1px solid #444;
+}
+
+.dark-theme .custom-modal-footer {
+  border-top: 1px solid #444;
+}
+
+.dark-theme .close-button {
+  color: #fff;
+}
+
+.dark-theme .accept-button {
+  background-color: #555;
+}
+
+.dark-theme .accept-button:hover {
+  background-color: #666;
+}
+
+/* Responsive para pantallas pequeñas */
 @media (max-width: 768px) {
-  .modal-dialog {
-    max-width: 95% !important;
-    width: 95% !important;
+  .custom-modal {
+    width: 95%;
+    margin: 10px;
   }
 }

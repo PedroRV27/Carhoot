@@ -8,45 +8,38 @@ const PrivacyPolicyModal = ({ show, onHide, theme }) => {
     <div className="custom-modal-overlay">
       <div className={`custom-modal ${theme === "dark" ? "dark-theme" : "light-theme"}`}>
         <div className="custom-modal-header">
-          <h2>Políticas de Privacidad</h2>
+          <h2>Política de Privacidad</h2>
           <button className="close-button" onClick={onHide}>×</button>
         </div>
         <div className="custom-modal-body">
-          <h4>Introducción</h4>
+          <h4>Cookies y Tecnologías de Seguimiento</h4>
           <p>
-            En nuestra aplicación, la privacidad de nuestros usuarios es muy importante para nosotros. 
-            Esta política de privacidad explica cómo recopilamos, usamos, compartimos y protegemos su 
-            información personal.
+            Este sitio utiliza cookies y tecnologías de seguimiento similares para mejorar la experiencia 
+            del usuario y ofrecer un entorno publicitario más relevante. Las cookies son esenciales para 
+            medir la efectividad de la publicidad y garantizar una industria publicitaria en línea sólida.  
+          </p>
+          <p>
+            Utilizamos una cookie propia para almacenar el progreso del usuario en el juego, permitiéndole 
+            continuar desde donde lo dejó en visitas posteriores. Además, nuestros socios publicitarios 
+            pueden utilizar identificadores únicos almacenados en cookies para mejorar la personalización 
+            de anuncios y la compatibilidad en navegadores como iOS y macOS.
           </p>
 
-          <h4>Información que Recopilamos</h4>
+          <h4>Preferencias de Publicidad</h4>
           <p>
-            Recopilamos información que usted nos proporciona directamente, como su nombre, dirección 
-            de correo electrónico y cualquier otra información que decida compartir con nosotros.
+            Algunos anuncios en nuestro sitio pueden estar basados en su actividad de navegación y pueden 
+            utilizar tecnologías de seguimiento para mostrar contenido relevante. Estas cookies publicitarias 
+            permiten una mejor experiencia adaptada a los intereses de cada usuario.
+          </p>
+          <p>
+            PARA USUARIOS EN LA UE: Al utilizar nuestro sitio, ciertas empresas preseleccionadas pueden acceder 
+            y utilizar información de su dispositivo para mostrar anuncios personalizados.
           </p>
 
-          <h4>Uso de la Información</h4>
+          <h4>Actualización de la Política</h4>
           <p>
-            Utilizamos la información recopilada para proporcionar, mantener y mejorar nuestros 
-            servicios, así como para desarrollar nuevos servicios y proteger a nuestros usuarios.
-          </p>
-
-          <h4>Compartir Información</h4>
-          <p>
-            No compartimos su información personal con terceros, excepto en los casos en que sea 
-            necesario para proporcionar nuestros servicios o cuando estemos legalmente obligados a hacerlo.
-          </p>
-
-          <h4>Seguridad</h4>
-          <p>
-            Implementamos medidas de seguridad para proteger su información personal contra el acceso 
-            no autorizado, la alteración, la divulgación o la destrucción.
-          </p>
-
-          <h4>Cambios en la Política de Privacidad</h4>
-          <p>
-            Podemos actualizar esta política de privacidad ocasionalmente. Le notificaremos cualquier 
-            cambio publicando la nueva política en esta página.
+            Esta política de privacidad puede actualizarse ocasionalmente. Cualquier cambio será reflejado en 
+            esta página.
           </p>
         </div>
         <div className="custom-modal-footer">

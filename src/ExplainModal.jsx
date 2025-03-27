@@ -20,7 +20,7 @@ const ExplainModal = ({ isOpen, onClose }) => {
         <p><strong>El objetivo del juego</strong> es adivinar <strong>la marca, el modelo y el año</strong> de un coche a partir de imágenes.</p>
         
         <p><strong>1. Adivina la marca:</strong> Escribe el nombre de la marca a la que pertenece el coche.</p>
-        <div style={{ padding: "10px", backgroundColor: "#f8d7da", borderRadius: "8px", fontWeight: "bold", fontSize: "1.1em" }}>
+        <div class="modelo" style={{ padding: "10px", backgroundColor: "#f8d7da", borderRadius: "8px", fontWeight: "bold", fontSize: "1.1em" }}>
           <p><strong>2. Adivina el modelo:</strong> Si aciertas la marca, ahora debes escribir el modelo del coche.</p>
           <p>Para marcas como BMW o Mercedes-Benz, no es necesario especificar el modelo de motor. En su lugar, indica la serie o clase correspondiente, como <strong>"Serie 3"</strong> en BMW o <strong>"C-Class", "E-Class", "SL-Class"</strong> en Mercedes.</p>
         </div>

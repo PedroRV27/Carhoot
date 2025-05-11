@@ -754,3 +754,18 @@ input.error {
 .privacy-policy-button.dark-theme:hover {
   color: #ccc; /* Color gris claro al pasar el mouse */
 }
+
+
+/*Multiplayer button */
+.title-container {
+  position: relative;
+}
+
+.multiplayer-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+}

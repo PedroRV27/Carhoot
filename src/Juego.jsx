@@ -8,6 +8,7 @@ import HintModal from "./HintModal";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
+import { Link } from 'react-router-dom';
 import Cookies from "js-cookie";
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
@@ -281,6 +282,9 @@ const Juego = () => {
             <div className="card">
               <div className="title-container">
                 <h1 className="game-title">Guess the Car</h1>
+                <Link to="/multijugador" className="btn btn-secondary multiplayer-btn">
+                  Multijugador Local
+                </Link>
               </div>
               <div className="card-body">
                 <div className="position-relative">

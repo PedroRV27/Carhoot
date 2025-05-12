@@ -7,7 +7,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import HintModal from "./HintModal";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb,faUsers } from "@fortawesome/free-solid-svg-icons";
 import { Link } from 'react-router-dom';
 import Cookies from "js-cookie";
 
@@ -283,7 +283,7 @@ const Juego = () => {
               <div className="title-container">
                 <h1 className="game-title">Guess the Car</h1>
                 <Link to="/multijugador" className="btn btn-secondary multiplayer-btn">
-                  Multijugador Local
+                  <FontAwesomeIcon icon={faUsers} className="me-2" />
                 </Link>
               </div>
               <div className="card-body">

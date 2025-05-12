@@ -4,7 +4,7 @@ import { auth, db } from "./services/firebase";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { Container, Navbar, Button, Form, Table, Modal, Card, Row, Col } from 'react-bootstrap';
-import './App.css'; // Importa el archivo CSS
+import './App.css';
 
 const App = () => {
   const [marca, setMarca] = useState("");
@@ -30,6 +30,8 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [cocheToDelete, setCocheToDelete] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -54,12 +56,10 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-
   const showCoches = async () => {
     const data = await getCoches();
     setCoches(data);
   };
-
 
   const handleLogin = async () => {
     try {
@@ -113,6 +113,20 @@ const App = () => {
       fechaProgramada: coche.fechaProgramada || "",
     });
     setShowEditModal(true);
+  };
+
+  const handleDeleteClick = (coche) => {
+    setCocheToDelete(coche);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (cocheToDelete) {
+      await deleteCoche(cocheToDelete.id);
+      showCoches();
+      setShowDeleteModal(false);
+      setCocheToDelete(null);
+    }
   };
 
   const handleUpdate = async () => {
@@ -261,7 +275,7 @@ const App = () => {
                     </td>
                     <td>
                       <Button variant="warning" onClick={() => handleEdit(coche.id, coche)}>Editar</Button>{' '}
-                      <Button variant="danger" onClick={async () => { await deleteCoche(coche.id); showCoches(); }}>Eliminar</Button>
+                      <Button variant="danger" onClick={() => handleDeleteClick(coche)}>Eliminar</Button>
                     </td>
                   </tr>
                 ))}
@@ -288,7 +302,7 @@ const App = () => {
                   </Row>
                   <div className="mt-3">
                     <Button variant="warning" onClick={() => handleEdit(coche.id, coche)}>Editar</Button>{' '}
-                    <Button variant="danger" onClick={async () => { await deleteCoche(coche.id); showCoches(); }}>Eliminar</Button>
+                    <Button variant="danger" onClick={() => handleDeleteClick(coche)}>Eliminar</Button>
                   </div>
                 </Card.Body>
               </Card>
@@ -429,6 +443,22 @@ const App = () => {
               </Button>
             </Modal.Footer>
           </Modal>
+
+          {/* Modal de confirmación para eliminar */}
+          <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirmar Eliminación</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              ¿Estás seguro de que deseas eliminar el coche {cocheToDelete?.Marca} {cocheToDelete?.Modelo}?
+              Esta acción no se puede deshacer.
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="danger" onClick={confirmDelete}>
+                Eliminar
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </>
       ) : (
         <p>No tienes permiso para acceder a esta sección.</p>
@@ -438,4 +468,3 @@ const App = () => {
 };
 
 export default App;
-

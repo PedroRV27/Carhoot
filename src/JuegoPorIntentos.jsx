@@ -1,15 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "./context/AppContext";
 import { getCoches } from "./services/api";
-import "./Juego.css";
+import "./JuegoPorIntentos.css";
 import Header from "./Header";
 import "bootstrap/dist/css/bootstrap.min.css";
-import HintModal from "./HintModal";
-import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLightbulb,faUsers,faGamepad } from "@fortawesome/free-solid-svg-icons";
-import { Link } from 'react-router-dom';
+import { faLightbulb, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { Link, useNavigate } from 'react-router-dom';
 import Cookies from "js-cookie";
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -36,8 +36,9 @@ const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
   </ul>
 );
 
-const Juego = () => {
-  const { theme, language } = useContext(AppContext);
+const JuegoPorIntentos = () => {
+  const { theme } = useContext(AppContext);
+  const navigate = useNavigate();
 
   const [vehiculoDelDia, setVehiculoDelDia] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -54,9 +55,10 @@ const Juego = () => {
   });
   const [errorCount, setErrorCount] = useState(0);
   const [maxImageIndex, setMaxImageIndex] = useState(0);
-  const [showHintModal, setShowHintModal] = useState(false);
   const [revealedLetters, setRevealedLetters] = useState(0);
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [totalAttempts, setTotalAttempts] = useState(9);
+  const [showResultModal, setShowResultModal] = useState(false);
 
   useEffect(() => {
     fetchVehiculoDelDia();
@@ -68,12 +70,11 @@ const Juego = () => {
     }
   }, [vehiculoDelDia]);
 
-  // Guardar progreso cada vez que cambia el estado
   useEffect(() => {
-    if (vehiculoDelDia) {
-      saveProgressToCookie();
+    if (totalAttempts <= 0 && !isCompleted) {
+      setShowGameOverModal(true);
     }
-  }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, vehiculoDelDia]);
+  }, [totalAttempts, isCompleted]);
 
   const fetchVehiculoDelDia = async () => {
     const coches = await getCoches();
@@ -83,27 +84,25 @@ const Juego = () => {
   };
 
   const loadProgressFromCookie = () => {
-    const progress = Cookies.get("progress");
+    const progress = Cookies.get("progressIntentos");
     if (progress) {
       const savedData = JSON.parse(progress);
       
-      // Verificar si es el mismo día y el mismo vehículo
       const hoy = new Date().toISOString().split("T")[0];
       const fechaGuardada = savedData.fecha;
       const vehiculoIdGuardado = savedData.vehiculoId;
       
-      // Si es un nuevo día o un nuevo vehículo, no cargar el progreso anterior
       if (fechaGuardada !== hoy || vehiculoIdGuardado !== vehiculoDelDia.id) {
         return;
       }
       
-      // Si es el mismo día y el mismo vehículo, cargar el progreso
       setStep(savedData.step);
       setIsCompleted(savedData.isCompleted);
       setIntentosFallidos(savedData.intentosFallidos);
       setErrorCount(savedData.errorCount);
       setMaxImageIndex(savedData.maxImageIndex);
       setRevealedLetters(savedData.revealedLetters);
+      setTotalAttempts(savedData.totalAttempts);
       if (savedData.currentImageIndex !== undefined) {
         setCurrentImageIndex(savedData.currentImageIndex);
       }
@@ -114,17 +113,18 @@ const Juego = () => {
     if (!vehiculoDelDia) return;
     
     const progress = {
-      fecha: new Date().toISOString().split("T")[0], // Guardar la fecha actual
-      vehiculoId: vehiculoDelDia.id, // Guardar el ID del vehículo actual
+      fecha: new Date().toISOString().split("T")[0],
+      vehiculoId: vehiculoDelDia.id,
       step,
       isCompleted,
       intentosFallidos,
       errorCount,
       maxImageIndex,
       revealedLetters,
-      currentImageIndex
+      currentImageIndex,
+      totalAttempts
     };
-    Cookies.set("progress", JSON.stringify(progress), { expires: 1 }); // La cookie expira en 1 día
+    Cookies.set("progressIntentos", JSON.stringify(progress), { expires: 1 });
   };
 
   const handleInputChange = (e, field) => {
@@ -143,7 +143,7 @@ const Juego = () => {
   };
 
   const handleGuess = () => {
-    if (!vehiculoDelDia) return;
+    if (!vehiculoDelDia || totalAttempts <= 0) return;
 
     const validateInput = (input, correctValue) =>
       input.toLowerCase() === correctValue.toLowerCase();
@@ -154,6 +154,7 @@ const Juego = () => {
         [field]: [...prev[field], value],
       }));
       setErrorCount((prev) => prev + 1);
+      setTotalAttempts((prev) => prev - 1);
 
       const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
       setMaxImageIndex(nuevoMaxIndex);
@@ -208,6 +209,8 @@ const Juego = () => {
     if (errorCount + 1 >= 5 && (errorCount + 1 - 5) % 3 === 0) {
       setRevealedLetters((prev) => prev + 1);
     }
+
+    saveProgressToCookie();
   };
 
   const handleKeyDown = (e) => {
@@ -221,21 +224,21 @@ const Juego = () => {
     }
   };
 
-  const handleShowHintModal = () => {
-    if (errorCount >= 5) {
-      const newRevealedLetters = Math.floor((errorCount - 5) / 3) + 1;
-      setRevealedLetters(newRevealedLetters);
-      setShowHintModal(true);
-    }
+  const handleContinueToNormalMode = () => {
+    // Guardar progreso antes de redirigir
+    saveProgressToCookie();
+    // Redirigir a la ruta principal (juego normal)
+    navigate('/');
+    setShowGameOverModal(false);
   };
 
-  const getRevealedText = () => {
-    if (step === 1) {
-      return vehiculoDelDia.Marca.slice(0, revealedLetters);
-    } else if (step === 2) {
-      return vehiculoDelDia.Modelo.slice(0, revealedLetters);
-    }
-    return "";
+  const handleShowResult = () => {
+    setShowGameOverModal(false);
+    setShowResultModal(true);
+  };
+
+  const handleBackToNormalMode = () => {
+    navigate('/');
   };
 
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
@@ -249,30 +252,6 @@ const Juego = () => {
     );
   }
 
-  if (isCompleted) {
-    return (
-      <div className={containerClass}>
-        <Header />
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-md-8">
-              <div className="text-center success-container">
-                <h2 className="success-message">
-                  {vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} {vehiculoDelDia.AnoFabricacion}
-                </h2>
-                <img
-                  src={vehiculoDelDia.Imagenes[4]}
-                  alt="Vehículo del día"
-                  className="success-image img-fluid rounded"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={containerClass}>
       <Header />
@@ -281,15 +260,17 @@ const Juego = () => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-              <div className="game-mode-buttons">
-              <Link to="/dificil" className="btn btn-secondary hard-mode-btn" title="Modo difícil">
-                <FontAwesomeIcon icon={faGamepad} />
-              </Link>
-              </div>
-                <h1 className="game-title">Guess the Car</h1>
-                <Link to="/multijugador" className="btn btn-secondary multiplayer-btn">
-                  <FontAwesomeIcon icon={faUsers} className="me-2" />
-                </Link>
+                <button 
+                  onClick={handleBackToNormalMode}
+                  className="btn btn-sm btn-outline-secondary back-button"
+                  title="Volver al modo normal"
+                >
+                  <FontAwesomeIcon icon={faArrowLeft} />
+                </button>
+                <h1 className="game-title">Guess the Car (Modo 9 Intentos)</h1>
+                <div className="attempts-counter">
+                  Intentos: <strong>{totalAttempts}/9</strong>
+                </div>
               </div>
               <div className="card-body">
                 <div className="position-relative">
@@ -340,12 +321,12 @@ const Juego = () => {
                           onChange={(e) => handleInputChange(e, "marca")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
+                          disabled={totalAttempts <= 0 || isCompleted}
                         />
                       </div>
                       <button
                         className="btn btn-secondary hint-button"
-                        onClick={handleShowHintModal}
-                        disabled={errorCount < 5}
+                        disabled={errorCount < 5 || totalAttempts <= 0}
                       >
                         <FontAwesomeIcon
                           icon={faLightbulb}
@@ -364,12 +345,12 @@ const Juego = () => {
                           onChange={(e) => handleInputChange(e, "modelo")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
+                          disabled={totalAttempts <= 0 || isCompleted}
                         />
                       </div>
                       <button
                         className="btn btn-secondary hint-button"
-                        onClick={handleShowHintModal}
-                        disabled={errorCount < 5}
+                        disabled={errorCount < 5 || totalAttempts <= 0}
                       >
                         <FontAwesomeIcon
                           icon={faLightbulb}
@@ -388,7 +369,7 @@ const Juego = () => {
                           onChange={(e) => handleInputChange(e, "anoFabricacion")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
-                          disabled={isCompleted}
+                          disabled={totalAttempts <= 0 || isCompleted}
                         />
                       </div>
                     </div>
@@ -398,7 +379,7 @@ const Juego = () => {
                     <button
                       className="btn btn-primary flex-fill mt-2 guess-button"
                       onClick={handleGuess}
-                      disabled={!marca && !modelo && !anoFabricacion}
+                      disabled={(!marca && !modelo && !anoFabricacion) || totalAttempts <= 0 || isCompleted}
                     >
                       Adivinar
                     </button>
@@ -427,29 +408,59 @@ const Juego = () => {
         </div>
       </div>
 
-      <div className="text-center mt-4">
-        <button
-          className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
-          onClick={() => setShowPrivacyPolicy(true)}
-        >
-          Políticas de Privacidad
-        </button>
-      </div>
+      {/* Modal de Game Over */}
+      <Modal 
+        show={showGameOverModal} 
+        onHide={() => setShowGameOverModal(false)}
+        centered
+      >
+        <Modal.Header closeButton className={theme === "dark" ? "bg-dark text-white" : ""}>
+          <Modal.Title>¡Se acabaron los intentos!</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={theme === "dark" ? "bg-dark text-white" : ""}>
+          Has agotado tus 9 intentos. ¿Qué deseas hacer?
+        </Modal.Body>
+        <Modal.Footer className={theme === "dark" ? "bg-dark" : ""}>
+          <Button variant="secondary" onClick={handleContinueToNormalMode}>
+            Continuar en modo normal
+          </Button>
+          <Button variant="primary" onClick={handleShowResult}>
+            Ver resultado
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-      <PrivacyPolicyModal
-        show={showPrivacyPolicy}
-        onHide={() => setShowPrivacyPolicy(false)}
-        theme={theme}
-      />
-
-      <HintModal
-        show={showHintModal}
-        onHide={() => setShowHintModal(false)}
-        revealedText={getRevealedText()}
-        attemptsRemaining={3 - ((errorCount - 5) % 3)}
-      />
+      {/* Modal de Resultado */}
+      <Modal 
+        show={showResultModal} 
+        onHide={() => setShowResultModal(false)}
+        centered
+      >
+        <Modal.Header closeButton className={theme === "dark" ? "bg-dark text-white" : ""}>
+          <Modal.Title>Resultado del juego</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={`text-center ${theme === "dark" ? "bg-dark text-white" : ""}`}>
+          <h4>{vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} ({vehiculoDelDia.AnoFabricacion})</h4>
+          <img
+            src={vehiculoDelDia.Imagenes[4]}
+            alt="Vehículo del día"
+            className="img-fluid rounded mt-3"
+          />
+          <div className="mt-3">
+            <p>Tu progreso:</p>
+            {step > 1 && <p>Marca: <strong>{vehiculoDelDia.Marca}</strong></p>}
+            {step > 2 && <p>Modelo: <strong>{vehiculoDelDia.Modelo}</strong></p>}
+            {step === 3 && <p>Año: <strong>No adivinado</strong></p>}
+          </div>
+        </Modal.Body>
+        <Modal.Footer className={theme === "dark" ? "bg-dark" : ""}>
+          <Button variant="secondary" onClick={handleContinueToNormalMode}>
+            Ir al modo normal
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
 
-export default Juego;
+export default JuegoPorIntentos;

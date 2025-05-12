@@ -769,3 +769,39 @@ input.error {
   font-size: 0.8rem;
   padding: 0.25rem 0.5rem;
 }
+
+
+/* Boton modo dificil*/
+.title-container {
+  position: relative;
+  text-align: center;
+  padding: 0 40px; 
+}
+
+.game-title {
+  display: inline-block;
+  margin: 0;
+}
+
+.multiplayer-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.hard-mode-btn {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.hard-mode-btn .svg-inline--fa,
+.multiplayer-btn .svg-inline--fa {
+  margin-right: 0.25rem;
+}

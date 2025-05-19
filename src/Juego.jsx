@@ -281,11 +281,6 @@ const Juego = () => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-              <div className="game-mode-buttons">
-              <Link to="/dificil" className="btn btn-secondary hard-mode-btn" title="Modo difícil">
-                <FontAwesomeIcon icon={faGamepad} />
-              </Link>
-              </div>
                 <h1 className="game-title">Guess the Car</h1>
                 <Link to="/multijugador" className="btn btn-secondary multiplayer-btn">
                   <FontAwesomeIcon icon={faUsers} className="me-2" />

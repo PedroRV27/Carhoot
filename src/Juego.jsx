@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb,faUsers,faGamepad } from "@fortawesome/free-solid-svg-icons";
 import { Link } from 'react-router-dom';
 import Cookies from "js-cookie";
+import { saveGameProgress, loadGameProgress } from "./utils/gameProgress";
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -59,21 +60,79 @@ const Juego = () => {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   useEffect(() => {
-    fetchVehiculoDelDia();
-  }, []);
+  const fetchData = async () => {
+    const coches = await getCoches();
+    const hoy = new Date().toISOString().split("T")[0];
+    const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+    setVehiculoDelDia(vehiculo);
+    
+    if (vehiculo) {
+      loadProgress();
+    }
+  };
+
+  fetchData();
+}, []);
 
   useEffect(() => {
-    if (vehiculoDelDia) {
-      loadProgressFromCookie();
-    }
-  }, [vehiculoDelDia]);
+  if (vehiculoDelDia) {
+    loadProgress();
+  }
+}, [vehiculoDelDia]);
 
-  // Guardar progreso cada vez que cambia el estado
+
+// Efecto para guardar progreso
+useEffect(() => {
+  if (!vehiculoDelDia) return;
+
+  const progressData = {
+    step,
+    isCompleted,
+    intentosFallidos,
+    errorCount,
+    maxImageIndex,
+    revealedLetters,
+    currentImageIndex,
+  };
+  
+  saveGameProgress(vehiculoDelDia, progressData);
+}, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, vehiculoDelDia]);
+
+
   useEffect(() => {
-    if (vehiculoDelDia) {
-      saveProgressToCookie();
+  const fetchData = async () => {
+    const coches = await getCoches();
+    const hoy = new Date().toISOString().split("T")[0];
+    const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+    setVehiculoDelDia(vehiculo);
+    
+    if (vehiculo) {
+      // Cargar progreso existente (compatible con ambos modos)
+      const savedData = loadGameProgress(vehiculo);
+      if (savedData) {
+        setStep(savedData.step || 1);
+        setIsCompleted(savedData.isCompleted || false);
+        setIntentosFallidos(savedData.intentosFallidos || {
+          marca: [],
+          modelo: [],
+          anoFabricacion: []
+        });
+        setErrorCount(savedData.errorCount || 0);
+        setMaxImageIndex(savedData.maxImageIndex || 0);
+        setRevealedLetters(savedData.revealedLetters || 0);
+        setCurrentImageIndex(savedData.currentImageIndex || 0);
+        
+        // Si el juego estaba completado, mostrar la última imagen
+        if (savedData.isCompleted) {
+          setMaxImageIndex(4);
+          setCurrentImageIndex(4);
+        }
+      }
     }
-  }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, vehiculoDelDia]);
+  };
+
+  fetchData();
+}, []);
 
   const fetchVehiculoDelDia = async () => {
     const coches = await getCoches();
@@ -82,50 +141,22 @@ const Juego = () => {
     setVehiculoDelDia(vehiculo);
   };
 
-  const loadProgressFromCookie = () => {
-    const progress = Cookies.get("progress");
-    if (progress) {
-      const savedData = JSON.parse(progress);
-      
-      // Verificar si es el mismo día y el mismo vehículo
-      const hoy = new Date().toISOString().split("T")[0];
-      const fechaGuardada = savedData.fecha;
-      const vehiculoIdGuardado = savedData.vehiculoId;
-      
-      // Si es un nuevo día o un nuevo vehículo, no cargar el progreso anterior
-      if (fechaGuardada !== hoy || vehiculoIdGuardado !== vehiculoDelDia.id) {
-        return;
-      }
-      
-      // Si es el mismo día y el mismo vehículo, cargar el progreso
-      setStep(savedData.step);
-      setIsCompleted(savedData.isCompleted);
-      setIntentosFallidos(savedData.intentosFallidos);
-      setErrorCount(savedData.errorCount);
-      setMaxImageIndex(savedData.maxImageIndex);
-      setRevealedLetters(savedData.revealedLetters);
-      if (savedData.currentImageIndex !== undefined) {
-        setCurrentImageIndex(savedData.currentImageIndex);
-      }
-    }
-  };
-
-  const saveProgressToCookie = () => {
-    if (!vehiculoDelDia) return;
-    
-    const progress = {
-      fecha: new Date().toISOString().split("T")[0], // Guardar la fecha actual
-      vehiculoId: vehiculoDelDia.id, // Guardar el ID del vehículo actual
-      step,
-      isCompleted,
-      intentosFallidos,
-      errorCount,
-      maxImageIndex,
-      revealedLetters,
-      currentImageIndex
-    };
-    Cookies.set("progress", JSON.stringify(progress), { expires: 1 }); // La cookie expira en 1 día
-  };
+  const loadProgress = () => {
+  const savedData = loadGameProgress(vehiculoDelDia);
+  if (savedData) {
+    setStep(savedData.step || 1);
+    setIsCompleted(savedData.isCompleted || false);
+    setIntentosFallidos(savedData.intentosFallidos || {
+      marca: [],
+      modelo: [],
+      anoFabricacion: []
+    });
+    setErrorCount(savedData.errorCount || 0);
+    setMaxImageIndex(savedData.maxImageIndex || 0);
+    setRevealedLetters(savedData.revealedLetters || 0);
+    setCurrentImageIndex(savedData.currentImageIndex || 0);
+  }
+};
 
   const handleInputChange = (e, field) => {
     const value = e.target.value;
@@ -143,72 +174,132 @@ const Juego = () => {
   };
 
   const handleGuess = () => {
-    if (!vehiculoDelDia) return;
+  if (!vehiculoDelDia) return;
 
-    const validateInput = (input, correctValue) =>
-      input.toLowerCase() === correctValue.toLowerCase();
+  const validateInput = (input, correctValue) =>
+    input.toLowerCase() === correctValue.toLowerCase();
 
-    const nuevoIntento = (field, value) => {
-      setIntentosFallidos((prev) => ({
-        ...prev,
-        [field]: [...prev[field], value],
-      }));
-      setErrorCount((prev) => prev + 1);
-
-      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
-      setMaxImageIndex(nuevoMaxIndex);
-      setCurrentImageIndex(nuevoMaxIndex);
+  const nuevoIntento = (field, value) => {
+    const newIntentosFallidos = {
+      ...intentosFallidos,
+      [field]: [...intentosFallidos[field], value]
     };
+    const newErrorCount = errorCount + 1;
+    
+    setIntentosFallidos(newIntentosFallidos);
+    setErrorCount(newErrorCount);
 
-    if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
-      setInputStatus("success");
-      setTimeout(() => {
-        setStep(2);
-        setMarca("");
-        setInputStatus("");
-        setErrorCount(0);
-        setRevealedLetters(0);
-      }, 800);
-    } else if (step === 1) {
-      setInputStatus("error");
-      nuevoIntento("marca", marca);
-      setMarca("");
-    } else if (step === 2 && validateInput(modelo, vehiculoDelDia.Modelo)) {
-      setInputStatus("success");
-      setTimeout(() => {
-        setStep(3);
-        setModelo("");
-        setInputStatus("");
-        setErrorCount(0);
-        setRevealedLetters(0);
-      }, 800);
-    } else if (step === 2) {
-      setInputStatus("error");
-      nuevoIntento("modelo", modelo);
-      setModelo("");
-    } else if (
-      step === 3 &&
-      anoFabricacion.toString() === vehiculoDelDia.AnoFabricacion.toString()
-    ) {
-      setInputStatus("success");
-      setTimeout(() => {
-        setIsCompleted(true);
-        setInputStatus("");
-      }, 800);
-    } else if (step === 3) {
-      setInputStatus("error");
-      nuevoIntento("anoFabricacion", anoFabricacion);
-      setAnoFabricacion("");
-    }
+    const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
+    setMaxImageIndex(nuevoMaxIndex);
+    setCurrentImageIndex(nuevoMaxIndex);
 
-    if (inputStatus === "error") {
-      setTimeout(() => setInputStatus(""), 300);
-    }
-
-    if (errorCount + 1 >= 5 && (errorCount + 1 - 5) % 3 === 0) {
-      setRevealedLetters((prev) => prev + 1);
-    }
+    return { newIntentosFallidos, newErrorCount, nuevoMaxIndex };
   };
+
+  // Función para guardar progreso normalizado
+  const saveProgress = (newState = {}) => {
+    saveGameProgress(vehiculoDelDia, {
+      modo: 'normal', // Identificar que es el modo normal
+      step: newState.step !== undefined ? newState.step : step,
+      isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
+      intentosFallidos: newState.intentosFallidos || intentosFallidos,
+      errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
+      maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
+      revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
+      currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
+      totalAttempts: 9 // El modo normal siempre muestra 9 intentos (ilimitados)
+    });
+  };
+
+  if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
+    setInputStatus("success");
+    setTimeout(() => {
+      setStep(2);
+      setMarca("");
+      setInputStatus("");
+      setErrorCount(0);
+      setRevealedLetters(0);
+      
+      saveProgress({
+        step: 2,
+        errorCount: 0,
+        revealedLetters: 0
+      });
+    }, 800);
+  } else if (step === 1) {
+    setInputStatus("error");
+    const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("marca", marca);
+    setMarca("");
+    
+    saveProgress({
+      intentosFallidos: newIntentosFallidos,
+      errorCount: newErrorCount,
+      maxImageIndex: nuevoMaxIndex,
+      currentImageIndex: nuevoMaxIndex
+    });
+  } else if (step === 2 && validateInput(modelo, vehiculoDelDia.Modelo)) {
+    setInputStatus("success");
+    setTimeout(() => {
+      setStep(3);
+      setModelo("");
+      setInputStatus("");
+      setErrorCount(0);
+      setRevealedLetters(0);
+      
+      saveProgress({
+        step: 3,
+        errorCount: 0,
+        revealedLetters: 0
+      });
+    }, 800);
+  } else if (step === 2) {
+    setInputStatus("error");
+    const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("modelo", modelo);
+    setModelo("");
+    
+    saveProgress({
+      intentosFallidos: newIntentosFallidos,
+      errorCount: newErrorCount,
+      maxImageIndex: nuevoMaxIndex,
+      currentImageIndex: nuevoMaxIndex
+    });
+  } else if (step === 3 && anoFabricacion.toString() === vehiculoDelDia.AnoFabricacion.toString()) {
+    setInputStatus("success");
+    setTimeout(() => {
+      setIsCompleted(true);
+      setInputStatus("");
+      
+      saveProgress({
+        isCompleted: true
+      });
+    }, 800);
+  } else if (step === 3) {
+    setInputStatus("error");
+    const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("anoFabricacion", anoFabricacion);
+    setAnoFabricacion("");
+    
+    saveProgress({
+      intentosFallidos: newIntentosFallidos,
+      errorCount: newErrorCount,
+      maxImageIndex: nuevoMaxIndex,
+      currentImageIndex: nuevoMaxIndex
+    });
+  }
+
+  if (inputStatus === "error") {
+    setTimeout(() => setInputStatus(""), 300);
+  }
+
+  if (errorCount + 1 >= 5 && (errorCount + 1 - 5) % 3 === 0) {
+    const newRevealedLetters = revealedLetters + 1;
+    setRevealedLetters(newRevealedLetters);
+    
+    saveProgress({
+      revealedLetters: newRevealedLetters,
+      errorCount: errorCount + 1
+    });
+  }
+};
 
   const handleKeyDown = (e) => {
     if (

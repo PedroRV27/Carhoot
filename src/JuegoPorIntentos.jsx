@@ -9,7 +9,7 @@ import { faLightbulb, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from 'react-router-dom';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
-import { saveGameProgress, loadGameProgress } from "./utils/gameProgress";
+import { saveGameProgress, loadGameProgress, checkAndResetDailyProgress } from "./utils/gameProgress";
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -99,6 +99,9 @@ useEffect(() => {
 }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, totalAttempts, vehiculoDelDia]);
 
   useEffect(() => {
+  // Verificar y resetear progreso diario
+  checkAndResetDailyProgress();
+  
   const fetchData = async () => {
     const coches = await getCoches();
     const hoy = new Date().toISOString().split("T")[0];
@@ -106,8 +109,9 @@ useEffect(() => {
     setVehiculoDelDia(vehiculo);
     
     if (vehiculo) {
-      // Cargar progreso sin discriminar por modo
-      const savedData = loadGameProgress(vehiculo);
+      // Cargar progreso especificando el modo 'dificil'
+      const savedData = loadGameProgress(vehiculo, 'dificil');
+      
       if (savedData) {
         setStep(savedData.step || 1);
         setIsCompleted(savedData.isCompleted || false);
@@ -121,14 +125,18 @@ useEffect(() => {
         setRevealedLetters(savedData.revealedLetters || 0);
         setCurrentImageIndex(savedData.currentImageIndex || 0);
         
-        // Manejar intentos: si está completado, resetear a 9, sino usar los guardados o 9
-        setTotalAttempts(savedData.isCompleted ? 9 : (savedData.totalAttempts || 9));
+        // Calcular intentos disponibles (9 - total de intentos usados en ambos modos)
+        const attemptsUsed = savedData.totalAttemptsUsed || 0;
+        setTotalAttempts(Math.max(0, 9 - attemptsUsed));
         
         // Si está completado, mostrar la última imagen
         if (savedData.isCompleted) {
           setMaxImageIndex(4);
           setCurrentImageIndex(4);
         }
+      } else {
+        // Si no hay progreso guardado, empezar con 9 intentos
+        setTotalAttempts(9);
       }
     }
   };
@@ -193,8 +201,10 @@ useEffect(() => {
     return { newIntentosFallidos, newErrorCount, newTotalAttempts, nuevoMaxIndex };
   };
 
-  // Función para guardar progreso
+  // Función para guardar progreso con totalAttemptsUsed
   const saveProgress = (newState = {}) => {
+    const attemptsUsed = 9 - (newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts);
+    
     saveGameProgress(vehiculoDelDia, {
       modo: 'dificil',
       step: newState.step !== undefined ? newState.step : step,
@@ -204,7 +214,8 @@ useEffect(() => {
       maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
       revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
       currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
-      totalAttempts: newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts
+      totalAttempts: newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts,
+      totalAttemptsUsed: attemptsUsed // Guardamos los intentos usados totales
     });
   };
 
@@ -350,14 +361,8 @@ useEffect(() => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-                <button 
-                  onClick={handleBackToNormalMode}
-                  className="btn btn-sm btn-outline-secondary back-button"
-                  title="Volver al modo normal"
-                >
-                  <FontAwesomeIcon icon={faArrowLeft} />
-                </button>
-                <h1 className="game-title">Guess the Car (Modo 9 Intentos)</h1>
+                
+                <h1 className="game-title">Guess the Car</h1>
                 <div className="attempts-counter">
                   Intentos: <strong>{totalAttempts}/9</strong>
                 </div>

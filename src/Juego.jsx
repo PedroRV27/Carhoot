@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb,faUsers,faGamepad } from "@fortawesome/free-solid-svg-icons";
 import { Link } from 'react-router-dom';
 import Cookies from "js-cookie";
-import { saveGameProgress, loadGameProgress } from "./utils/gameProgress";
+import { saveGameProgress, loadGameProgress, checkAndResetDailyProgress } from "./utils/gameProgress";
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -60,6 +60,7 @@ const Juego = () => {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   useEffect(() => {
+  checkAndResetDailyProgress();
   const fetchData = async () => {
     const coches = await getCoches();
     const hoy = new Date().toISOString().split("T")[0];
@@ -207,7 +208,7 @@ useEffect(() => {
       maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
       revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
       currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
-      totalAttempts: 9 // El modo normal siempre muestra 9 intentos (ilimitados)
+      totalAttemptsUsed: (newState.errorCount || errorCount) + (intentosFallidos.marca.length + intentosFallidos.modelo.length + intentosFallidos.anoFabricacion.length)
     });
   };
 

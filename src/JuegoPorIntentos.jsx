@@ -329,13 +329,23 @@ useEffect(() => {
 
  const handleShowResult = () => {
   setShowGameOverModal(false);
-  setShowResultModal(true);
+  setIsCompleted(true); // Esto activará la pantalla de éxito
+  setMaxImageIndex(4);
+  setCurrentImageIndex(4);
   
-  // Mostrar la imagen completa si el juego está completado
-  if (isCompleted) {
-    setMaxImageIndex(4);
-    setCurrentImageIndex(4);
-  }
+  // Guardar el estado como completado
+  saveGameProgress(vehiculoDelDia, {
+    modo: 'dificil',
+    step: 3,
+    isCompleted: true,
+    intentosFallidos,
+    errorCount,
+    maxImageIndex: 4,
+    revealedLetters,
+    currentImageIndex: 4,
+    totalAttempts,
+    totalAttemptsUsed: 9 - totalAttempts
+  });
 };
 
   const handleBackToNormalMode = () => {
@@ -352,6 +362,30 @@ useEffect(() => {
       </div>
     );
   }
+
+  if (isCompleted) {
+  return (
+    <div className={containerClass}>
+      <Header />
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-md-8">
+            <div className="text-center success-container">
+              <h2 className="success-message">
+                {vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} ({vehiculoDelDia.AnoFabricacion})
+              </h2>
+              <img
+                src={vehiculoDelDia.Imagenes[4]}
+                alt="Vehículo del día"
+                className="success-image img-fluid rounded"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className={containerClass}>
@@ -503,26 +537,83 @@ useEffect(() => {
         </div>
       </div>
 
-      <Modal 
-        show={showGameOverModal} 
-        onHide={() => setShowGameOverModal(false)}
-        centered
-      >
-        <Modal.Header closeButton className={theme === "dark" ? "bg-dark text-white" : ""}>
-          <Modal.Title>¡Se acabaron los intentos!</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className={theme === "dark" ? "bg-dark text-white" : ""}>
-          Has agotado tus 9 intentos. ¿Qué deseas hacer?
-        </Modal.Body>
-        <Modal.Footer className={theme === "dark" ? "bg-dark" : ""}>
-          <Button variant="secondary" onClick={handleContinueToNormalMode}>
-            Continuar en modo normal
-          </Button>
-          <Button variant="primary" onClick={handleShowResult}>
-            Ver resultado
-          </Button>
-        </Modal.Footer>
-      </Modal>
+<Modal 
+  show={showGameOverModal} 
+  onHide={() => setShowGameOverModal(false)}
+  centered
+  className={theme === "dark" ? "dark-modal" : ""}
+>
+  <Modal.Header 
+    closeButton 
+    className={theme === "dark" ? "bg-dark text-white border-secondary" : ""}
+    closeVariant={theme === "dark" ? "white" : undefined}
+  >
+    <Modal.Title style={{ fontFamily: "'Grechen', sans-serif", fontSize: "28px" }}>
+      ¡Se acabaron los intentos!
+    </Modal.Title>
+  </Modal.Header>
+  
+  <Modal.Body className={theme === "dark" ? "bg-dark text-white" : ""}>
+    <div style={{ 
+      fontFamily: "'Kanit', sans-serif",
+      fontSize: "18px",
+      marginBottom: "20px"
+    }}>
+      Has agotado tus 9 intentos. ¿Qué deseas hacer?
+    </div>
+    
+    <div style={{
+      backgroundColor: theme === "dark" ? "#2a2a2a" : "#f8f9fa",
+      padding: "15px",
+      borderRadius: "8px",
+      border: theme === "dark" ? "1px solid #444" : "1px solid #dee2e6",
+      fontFamily: "'KanitD', sans-serif",
+      fontSize: "14px"
+    }}>
+      <FontAwesomeIcon 
+        icon={faLightbulb} 
+        style={{ 
+          color: "#ffc107",
+          marginRight: "10px"
+        }} 
+      />
+      Si ves el resultado, no podrás seguir jugando hasta mañana.
+    </div>
+  </Modal.Body>
+  
+  <Modal.Footer className={theme === "dark" ? "bg-dark border-secondary" : ""}>
+    <Button 
+      variant={theme === "dark" ? "outline-light" : "outline-secondary"}
+      onClick={handleContinueToNormalMode}
+      style={{
+        fontFamily: "'Kanit', sans-serif",
+        border: theme === "dark" ? "1px solid #fff" : "1px solid #000",
+        borderRadius: "5px"
+      }}
+    >
+      Continuar en modo normal
+    </Button>
+    
+    <Button 
+      variant="warning"
+      onClick={() => {
+        if (window.confirm("¿Estás seguro de que quieres ver el resultado? No podrás seguir jugando hasta mañana.")) {
+          handleShowResult();
+        }
+      }}
+      style={{
+        fontFamily: "'Kanit', sans-serif",
+        fontWeight: "bold",
+        borderRadius: "5px",
+        backgroundColor: "#ffc107",
+        border: "none",
+        color: "#000"
+      }}
+    >
+      Ver resultado
+    </Button>
+  </Modal.Footer>
+</Modal>
 
     <Modal 
   show={showResultModal} 

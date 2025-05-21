@@ -6,3 +6,71 @@
   .modal-footer .btn-secondary:hover {
     background-color: #5a6268;
   }
+
+
+  /* Estilos para el modal */
+.modal-content{
+  border: 2px solid #000000;
+}
+.dark-modal .modal-content {
+  background-color: #1a1a1a;
+  border: 2px solid #d3d3d3;
+}
+
+.dark-modal .modal-header {
+  border-bottom: 1px solid #444;
+}
+
+.dark-modal .modal-footer {
+  border-top: 1px solid #444;
+}
+
+.modal-title {
+  font-family: 'Grechen', sans-serif;
+  font-size: 28px;
+}
+
+.modal-body {
+  font-family: 'Kanit', sans-serif;
+}
+
+/* Estilos para los botones del modal */
+.btn-outline-light {
+  border: 1px solid #fff;
+  color: #fff;
+}
+
+.btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  color: #000;
+  font-weight: bold;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+}
+
+/* Asegurar que el modal se vea bien en móviles */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 10px auto;
+    max-width: 95%;
+  }
+  
+  .modal-title {
+    font-size: 24px;
+  }
+  
+  .modal-body {
+    font-size: 16px;
+  }
+  
+  .modal-footer .btn {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}

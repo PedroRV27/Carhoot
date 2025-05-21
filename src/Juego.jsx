@@ -374,9 +374,6 @@ useEffect(() => {
             <div className="card">
               <div className="title-container">
                 <h1 className="game-title">Guess the Car</h1>
-                <Link to="/multijugador" className="btn btn-secondary multiplayer-btn">
-                  <FontAwesomeIcon icon={faUsers} className="me-2" />
-                </Link>
               </div>
               <div className="card-body">
                 <div className="position-relative">

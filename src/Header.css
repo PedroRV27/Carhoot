@@ -197,6 +197,118 @@ input:checked + .slider:before {
 .dark-theme input:checked + .slider {
   background-color: #1e88e5;
 }
+
+
+/* Estilos para el botón de juego */
+.game-button {
+  background: none;
+  border: 2px solid var(--text-color);
+  color: var(--text-color);
+  padding: 5px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.game-button:hover {
+  background-color: var(--text-color);
+  color: var(--header-bg);
+}
+
+.game-icon {
+  font-size: 1rem;
+}
+
+/* Estilos para el modal de juego */
+.game-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.game-modal.light {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.game-modal.dark {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.game-modal-content {
+  background-color: var(--header-bg);
+  padding: 20px;
+  border-radius: 10px;
+  width: 300px;
+  max-width: 90%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.game-modal h3 {
+  margin-top: 0;
+  color: var(--text-color);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.game-option {
+  margin-bottom: 15px;
+}
+
+.multiplayer-button {
+  background: none;
+  border: 2px solid var(--text-color);
+  color: var(--text-color);
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Kanit', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  gap: 8px;
+  width: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.multiplayer-button:hover {
+  background-color: var(--text-color);
+  color: var(--header-bg);
+}
+
+.multiplayer-icon {
+  font-size: 1rem;
+}
+
+.close-game-modal {
+  background-color: var(--text-color);
+  color: var(--header-bg);
+  border: none;
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Kanit', sans-serif;
+  width: 100%;
+  margin-top: 10px;
+  transition: opacity 0.3s ease;
+}
+
+.close-game-modal:hover {
+  opacity: 0.8;
+}
   
   /* Estilos para móviles y tablets */
   @media (max-width: 768px) {

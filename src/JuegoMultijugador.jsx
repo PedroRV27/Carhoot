@@ -11,7 +11,7 @@ import { faLightbulb, faHome, faArrowLeft, faTrophy } from "@fortawesome/free-so
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
     type="text"
-    className={`form-control input-field ${status}`}
+    className={`form-control input-field ${disabled ? 'disabled-field' : ''} ${status}`}
     placeholder={placeholder}
     value={value}
     onChange={onChange}
@@ -20,9 +20,12 @@ const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled 
   />
 );
 
-const PlayerTurnIndicator = ({ currentPlayer, players, isChanging }) => (
+const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound }) => (
   <div className={`player-turn-indicator ${isChanging ? 'changing' : ''}`}>
     <h4>Turno de: <span className="player-name">{players[currentPlayer].name}</span></h4>
+    {currentRound === 1 && <small className="turn-reason">(Ronda 1 - Turnos alternos)</small>}
+    {currentRound === 2 && <small className="turn-reason">(Ronda 2 - Turnos alternos)</small>}
+    {currentRound === 3 && <small className="turn-reason">(Ronda Final - Ventaja para líder)</small>}
     <div className="player-scores">
       {players.map((player, index) => (
         <div key={index} className={`player-score ${index === currentPlayer ? 'active' : ''}`}>
@@ -129,7 +132,6 @@ const JuegoMultijugador = () => {
   }, []);
 
   useEffect(() => {
-    // Verificar si todos los campos están adivinados después de cada actualización del estado
     const allFieldsGuessed = currentVehiculoIndex !== 2 
       ? gameState.marcaAdivinada && gameState.modeloAdivinado && gameState.anoAdivinado
       : gameState.modeloAdivinado && gameState.anoAdivinado;
@@ -137,10 +139,26 @@ const JuegoMultijugador = () => {
     if (allFieldsGuessed) {
       const timer = setTimeout(() => {
         if (currentVehiculoIndex < vehiculosDelDia.length - 1) {
-          // Pasar a la siguiente ronda
-          setCurrentVehiculoIndex(currentVehiculoIndex + 1);
+          const nextVehiculoIndex = currentVehiculoIndex + 1;
+          setCurrentVehiculoIndex(nextVehiculoIndex);
+
+          if (nextVehiculoIndex === 1) {
+            setCurrentPlayer(1);
+          } else if (nextVehiculoIndex === 2) {
+            if (players[0].score > players[1].score) {
+              setCurrentPlayer(0);
+            } else if (players[1].score > players[0].score) {
+              setCurrentPlayer(1);
+            } else {
+              setCurrentPlayer(Math.random() < 0.5 ? 0 : 1);
+            }
+          }
+
+          setIsChangingPlayer(true);
+          setTimeout(() => setIsChangingPlayer(false), 500);
+
           setGameState({
-            marcaAdivinada: currentVehiculoIndex + 1 === 2,
+            marcaAdivinada: nextVehiculoIndex === 2,
             modeloAdivinado: false,
             anoAdivinado: false
           });
@@ -152,7 +170,6 @@ const JuegoMultijugador = () => {
           setModelo("");
           setAnoFabricacion("");
         } else {
-          // Mostrar modal del ganador
           setShowWinnerModal(true);
         }
       }, 1000);
@@ -190,6 +207,7 @@ const JuegoMultijugador = () => {
         { name: tempPlayerNames[0], score: 0 },
         { name: tempPlayerNames[1], score: 0 }
       ]);
+      setCurrentPlayer(0);
       setShowPlayerNamesModal(false);
     }
   };
@@ -212,9 +230,17 @@ const JuegoMultijugador = () => {
 
   const changePlayer = () => {
     setIsChangingPlayer(true);
-    setMarca("");
-    setModelo("");
-    setAnoFabricacion("");
+    
+    // Limpiar solo los campos no adivinados
+    if (!gameState.marcaAdivinada && currentVehiculoIndex !== 2) {
+      setMarca("");
+    }
+    if (!gameState.modeloAdivinado) {
+      setModelo("");
+    }
+    if (!gameState.anoAdivinado) {
+      setAnoFabricacion("");
+    }
     
     setTimeout(() => {
       setCurrentPlayer((currentPlayer + 1) % players.length);
@@ -233,7 +259,6 @@ const JuegoMultijugador = () => {
     const updatedPlayers = [...players];
     let newGameState = {...gameState};
 
-    // Actualizar puntuaciones y estados de aciertos
     if (marcaCorrecta && !newGameState.marcaAdivinada) {
       updatedPlayers[currentPlayer].score += 10;
       newGameState.marcaAdivinada = true;
@@ -247,7 +272,6 @@ const JuegoMultijugador = () => {
       newGameState.anoAdivinado = true;
     }
 
-    // Verificar si se ha adivinado todo en este turno
     const allGuessedNow = currentVehiculoIndex !== 2
       ? newGameState.marcaAdivinada && newGameState.modeloAdivinado && newGameState.anoAdivinado
       : newGameState.modeloAdivinado && newGameState.anoAdivinado;
@@ -378,6 +402,7 @@ const JuegoMultijugador = () => {
                   currentPlayer={currentPlayer} 
                   players={players} 
                   isChanging={isChangingPlayer}
+                  currentRound={currentVehiculoIndex + 1}
                 />
                 
                 <div className="position-relative">
@@ -402,11 +427,11 @@ const JuegoMultijugador = () => {
                   {currentVehiculoIndex !== 2 && (
                     <div className="input-group mb-2">
                       <InputField
-                        value={marca}
+                        value={gameState.marcaAdivinada ? vehiculoActual.Marca : marca}
                         placeholder={gameState.marcaAdivinada ? "Marca ya adivinada" : "Introduce la marca"}
-                        onChange={(e) => setMarca(e.target.value)}
+                        onChange={(e) => !gameState.marcaAdivinada && setMarca(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        status={inputStatus}
+                        status={gameState.marcaAdivinada ? "success" : ""}
                         disabled={gameState.marcaAdivinada}
                       />
                     </div>
@@ -414,22 +439,22 @@ const JuegoMultijugador = () => {
                   
                   <div className="input-group mb-2">
                     <InputField
-                      value={modelo}
+                      value={gameState.modeloAdivinado ? vehiculoActual.Modelo : modelo}
                       placeholder={gameState.modeloAdivinado ? "Modelo ya adivinado" : "Introduce el modelo"}
-                      onChange={(e) => setModelo(e.target.value)}
+                      onChange={(e) => !gameState.modeloAdivinado && setModelo(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      status={inputStatus}
+                      status={gameState.modeloAdivinado ? "success" : ""}
                       disabled={gameState.modeloAdivinado}
                     />
                   </div>
                   
                   <div className="input-group mb-2">
                     <InputField
-                      value={anoFabricacion}
+                      value={gameState.anoAdivinado ? vehiculoActual.AnoFabricacion : anoFabricacion}
                       placeholder={gameState.anoAdivinado ? "Año ya adivinado" : "Introduce el año"}
-                      onChange={(e) => setAnoFabricacion(e.target.value)}
+                      onChange={(e) => !gameState.anoAdivinado && setAnoFabricacion(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      status={inputStatus}
+                      status={gameState.anoAdivinado ? "success" : ""}
                       disabled={gameState.anoAdivinado}
                     />
                   </div>

@@ -23,9 +23,9 @@ const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled 
 const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound }) => (
   <div className={`player-turn-indicator ${isChanging ? 'changing' : ''}`}>
     <h4>Turno de: <span className="player-name">{players[currentPlayer].name}</span></h4>
-    {currentRound === 1 && <small className="turn-reason">(Ronda 1 - Turnos alternos)</small>}
-    {currentRound === 2 && <small className="turn-reason">(Ronda 2 - Turnos alternos)</small>}
-    {currentRound === 3 && <small className="turn-reason">(Ronda Final - Ventaja para líder)</small>}
+    {currentRound === 1 && <small className="turn-reason"></small>}
+    {currentRound === 2 && <small className="turn-reason"></small>}
+    {currentRound === 3 && <small className="turn-reason"></small>}
     <div className="player-scores">
       {players.map((player, index) => (
         <div key={index} className={`player-score ${index === currentPlayer ? 'active' : ''}`}>
@@ -392,10 +392,8 @@ const JuegoMultijugador = () => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-                <h1 className="game-title">Guess the Car (Ronda {currentVehiculoIndex + 1}/3)</h1>
-                <Link to="/" className="btn btn-secondary home-btn">
-                  <FontAwesomeIcon icon={faHome} />
-                </Link>
+                <h1 className="game-title">(Ronda {currentVehiculoIndex + 1}/3)</h1>
+                
               </div>
               <div className="card-body">
                 <PlayerTurnIndicator 
@@ -470,15 +468,6 @@ const JuegoMultijugador = () => {
                       }
                     >
                       Adivinar
-                    </button>
-                    <button
-                      className="btn btn-secondary hint-button mt-2"
-                      disabled={errorCount < 5}
-                    >
-                      <FontAwesomeIcon
-                        icon={faLightbulb}
-                        className={errorCount < 5 ? "text-muted" : "text-warning active"}
-                      />
                     </button>
                   </div>
 

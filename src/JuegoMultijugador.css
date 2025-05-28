@@ -50,16 +50,16 @@
   
   /* Estilos para el modo multijugador */
   .player-turn-indicator {
-    margin-bottom: 20px;
+    margin-bottom: -10px;
     padding: 10px;
     border-radius: 5px;
-    background-color: var(--player-indicator-bg);
+    
     text-align: center;
   }
   
   .player-name {
     font-weight: bold;
-    color: var(--primary-color);
+    color: #ffc107;
   }
   
   .player-scores {
@@ -67,18 +67,38 @@
     justify-content: center;
     gap: 20px;
     margin-top: 10px;
+  
   }
   
   .player-score {
     padding: 5px 10px;
     border-radius: 5px;
-    background-color: var(--score-bg);
-    color: var(--text-color);
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
+    border: 2px solid rgb(14, 13, 13);
   }
   
   .player-score.active {
-    background-color: var(--active-score-bg);
+    background-color: rgb(255, 255, 255);
     font-weight: bold;
+    color:#ffc107;
+    border: 2px solid rgb(0, 0, 0);
+  }
+
+  /*Modo oscuro*/
+  .dark-theme .player-score{
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: black;
+    color: white;
+    border: 2px solid white;
+  }
+
+  .dark-theme .player-score.active {
+    background-color: rgb(0, 0, 0);
+    font-weight: bold;
+    color:#ffc107;
+    border: 2px solid rgb(255, 255, 255);
   }
   
   .attempt-player {
@@ -163,7 +183,6 @@
   .dots-container {
     display: flex;
     justify-content: center;
-    margin-top: 10px;
   }
   
   .dot {
@@ -180,6 +199,10 @@
     background-color: var(--dot-active);
   }
   
+  /*Input - GROUP*/
+  .input-group{
+    margin-top: 2px;
+  }
   /* Variables para temas */
   :root {
     --modal-bg: #ffffff;
@@ -302,7 +325,7 @@
 
 @keyframes highlightPlayer {
   0% { color: inherit; transform: scale(1); }
-  50% { color: var(--primary-color); transform: scale(1.1); }
+  50% { color: gold; transform: scale(1.1); }
   100% { color: inherit; transform: scale(1); }
 }
 

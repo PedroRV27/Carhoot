@@ -31,6 +31,9 @@ const Header = () => {
   const openGameModal = () => setIsGameModalOpen(true);
   const closeGameModal = () => setIsGameModalOpen(false);
 
+  // Verificar si estamos en la ruta de multijugador
+  const isMultiplayerRoute = location.pathname === "/multijugador";
+
   return (
     <header className="header">
       <div className="header-content">
@@ -74,12 +77,17 @@ const Header = () => {
               </div>
             </div>
             <div className="game-option">
-              
+              {isMultiplayerRoute ? (
+                <Link to="/" className="multiplayer-button" onClick={closeGameModal}>
+                  <FaUsers className="multiplayer-icon" />
+                  Modo Normal
+                </Link>
+              ) : (
                 <Link to="/multijugador" className="multiplayer-button" onClick={closeGameModal}>
                   <FaUsers className="multiplayer-icon" />
                   Multijugador Local
                 </Link>
-              
+              )}
             </div>
             <button className="close-game-modal" onClick={closeGameModal}>
               Cerrar

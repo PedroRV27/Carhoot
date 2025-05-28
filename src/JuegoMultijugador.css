@@ -279,3 +279,102 @@
     padding: 0.5rem;
   }
   
+
+  /* Animación para cambio de jugador */
+.player-turn-indicator.changing {
+  animation: playerChange 0.5s ease;
+}
+
+@keyframes playerChange {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.95); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.player-name {
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.player-turn-indicator.changing .player-name {
+  animation: highlightPlayer 0.5s ease;
+}
+
+@keyframes highlightPlayer {
+  0% { color: inherit; transform: scale(1); }
+  50% { color: var(--primary-color); transform: scale(1.1); }
+  100% { color: inherit; transform: scale(1); }
+}
+
+/* Estilos para el modal de ganador */
+.winner-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.winner-modal {
+  background-color: var(--modal-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.winner-modal-header {
+  margin-bottom: 1.5rem;
+}
+
+.winner-modal-header h2 {
+  color: var(--primary-color);
+  margin-top: 1rem;
+}
+
+.trophy-icon {
+  font-size: 3rem;
+  color: gold;
+  margin-bottom: 1rem;
+}
+
+.winner-modal-body {
+  margin-bottom: 2rem;
+}
+
+.player-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  border-radius: 6px;
+  background-color: var(--score-bg);
+}
+
+.player-result.winner {
+  background-color: rgba(255, 215, 0, 0.2);
+  border-left: 4px solid gold;
+}
+
+.winner-badge {
+  background-color: gold;
+  color: #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.winner-modal-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}

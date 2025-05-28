@@ -1,13 +1,12 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "./context/AppContext";
 import { getCoches } from "./services/api";
-import "./Juego.css";
 import "./JuegoMultijugador.css";
 import Header from "./Header";
 import { Link, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLightbulb, faHome, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb, faHome, faArrowLeft, faTrophy } from "@fortawesome/free-solid-svg-icons";
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -21,8 +20,8 @@ const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled 
   />
 );
 
-const PlayerTurnIndicator = ({ currentPlayer, players }) => (
-  <div className="player-turn-indicator">
+const PlayerTurnIndicator = ({ currentPlayer, players, isChanging }) => (
+  <div className={`player-turn-indicator ${isChanging ? 'changing' : ''}`}>
     <h4>Turno de: <span className="player-name">{players[currentPlayer].name}</span></h4>
     <div className="player-scores">
       {players.map((player, index) => (
@@ -65,6 +64,37 @@ const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle }) =
   </ul>
 );
 
+const WinnerModal = ({ players, onClose }) => {
+  const winnerScore = Math.max(...players.map(p => p.score));
+  const winners = players.filter(p => p.score === winnerScore);
+  
+  return (
+    <div className="winner-modal-overlay">
+      <div className="winner-modal">
+        <div className="winner-modal-header">
+          <FontAwesomeIcon icon={faTrophy} className="trophy-icon" />
+          <h2>¡Juego Completado!</h2>
+        </div>
+        
+        <div className="winner-modal-body">
+          <h3>Resultados Finales</h3>
+          {players.map((player, index) => (
+            <div key={index} className={`player-result ${player.score === winnerScore ? 'winner' : ''}`}>
+              <span className="player-name">{player.name}</span>
+              <span className="player-score">{player.score} puntos</span>
+              {player.score === winnerScore && <span className="winner-badge">🏆 Ganador</span>}
+            </div>
+          ))}
+        </div>
+        
+        <button onClick={onClose} className="btn btn-primary winner-modal-button">
+          Volver al Inicio
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const JuegoMultijugador = () => {
   const { theme, language } = useContext(AppContext);
   const navigate = useNavigate();
@@ -80,11 +110,13 @@ const JuegoMultijugador = () => {
   const [errorCount, setErrorCount] = useState(0);
   const [maxImageIndex, setMaxImageIndex] = useState(0);
   const [showPlayerNamesModal, setShowPlayerNamesModal] = useState(true);
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [players, setPlayers] = useState([
     { name: "", score: 0 },
     { name: "", score: 0 }
   ]);
   const [currentPlayer, setCurrentPlayer] = useState(0);
+  const [isChangingPlayer, setIsChangingPlayer] = useState(false);
   const [tempPlayerNames, setTempPlayerNames] = useState(["", ""]);
   const [gameState, setGameState] = useState({
     marcaAdivinada: false,
@@ -96,11 +128,59 @@ const JuegoMultijugador = () => {
     fetchVehiculosDelDia();
   }, []);
 
+  useEffect(() => {
+    // Verificar si todos los campos están adivinados después de cada actualización del estado
+    const allFieldsGuessed = currentVehiculoIndex !== 2 
+      ? gameState.marcaAdivinada && gameState.modeloAdivinado && gameState.anoAdivinado
+      : gameState.modeloAdivinado && gameState.anoAdivinado;
+
+    if (allFieldsGuessed) {
+      const timer = setTimeout(() => {
+        if (currentVehiculoIndex < vehiculosDelDia.length - 1) {
+          // Pasar a la siguiente ronda
+          setCurrentVehiculoIndex(currentVehiculoIndex + 1);
+          setGameState({
+            marcaAdivinada: currentVehiculoIndex + 1 === 2,
+            modeloAdivinado: false,
+            anoAdivinado: false
+          });
+          setIntentosFallidos([]);
+          setErrorCount(0);
+          setMaxImageIndex(0);
+          setCurrentImageIndex(0);
+          setMarca("");
+          setModelo("");
+          setAnoFabricacion("");
+        } else {
+          // Mostrar modal del ganador
+          setShowWinnerModal(true);
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, currentVehiculoIndex, vehiculosDelDia.length]);
+
   const fetchVehiculosDelDia = async () => {
-    const coches = await getCoches();
-    const hoy = new Date().toISOString().split("T")[0];
-    const vehiculos = coches.filter((coche) => coche.fechaProgramada === hoy).slice(0, 3);
-    setVehiculosDelDia(vehiculos);
+    try {
+      const coches = await getCoches();
+      
+      const vehiculosAleatorios = [];
+      const indicesUsados = new Set();
+      const cantidad = Math.min(3, coches.length);
+      
+      while (vehiculosAleatorios.length < cantidad) {
+        const indiceAleatorio = Math.floor(Math.random() * coches.length);
+        if (!indicesUsados.has(indiceAleatorio)) {
+          indicesUsados.add(indiceAleatorio);
+          vehiculosAleatorios.push(coches[indiceAleatorio]);
+        }
+      }
+      
+      setVehiculosDelDia(vehiculosAleatorios);
+    } catch (error) {
+      console.error("Error al obtener los coches:", error);
+    }
   };
 
   const handlePlayerNameSubmit = (e) => {
@@ -130,6 +210,18 @@ const JuegoMultijugador = () => {
     return "fallido custom-bg-danger";
   };
 
+  const changePlayer = () => {
+    setIsChangingPlayer(true);
+    setMarca("");
+    setModelo("");
+    setAnoFabricacion("");
+    
+    setTimeout(() => {
+      setCurrentPlayer((currentPlayer + 1) % players.length);
+      setIsChangingPlayer(false);
+    }, 500);
+  };
+
   const handleGuess = () => {
     if (!vehiculosDelDia[currentVehiculoIndex]) return;
 
@@ -140,16 +232,8 @@ const JuegoMultijugador = () => {
     
     const updatedPlayers = [...players];
     let newGameState = {...gameState};
-    let allCorrect = false;
 
-    // Determinar si todos los campos requeridos son correctos
-    if (currentVehiculoIndex !== 2) {
-      allCorrect = marcaCorrecta && modeloCorrecto && anoCorrecto;
-    } else {
-      allCorrect = modeloCorrecto && anoCorrecto;
-    }
-
-    // Asignar puntos por campos adivinados
+    // Actualizar puntuaciones y estados de aciertos
     if (marcaCorrecta && !newGameState.marcaAdivinada) {
       updatedPlayers[currentPlayer].score += 10;
       newGameState.marcaAdivinada = true;
@@ -163,31 +247,13 @@ const JuegoMultijugador = () => {
       newGameState.anoAdivinado = true;
     }
 
-    if (allCorrect) {
+    // Verificar si se ha adivinado todo en este turno
+    const allGuessedNow = currentVehiculoIndex !== 2
+      ? newGameState.marcaAdivinada && newGameState.modeloAdivinado && newGameState.anoAdivinado
+      : newGameState.modeloAdivinado && newGameState.anoAdivinado;
+
+    if (allGuessedNow) {
       setInputStatus("success");
-      setTimeout(() => {
-        if (currentVehiculoIndex < vehiculosDelDia.length - 1) {
-          // Pasar a la siguiente ronda sin cambiar de turno
-          setCurrentVehiculoIndex(currentVehiculoIndex + 1);
-          setGameState({
-            marcaAdivinada: currentVehiculoIndex === 2, // No mostrar marca en el 3er coche
-            modeloAdivinado: false,
-            anoAdivinado: false
-          });
-          setIntentosFallidos([]);
-          setErrorCount(0);
-          setMaxImageIndex(0);
-          setCurrentImageIndex(0);
-        } else {
-          // Juego completado
-          setGameState({
-            marcaAdivinada: true,
-            modeloAdivinado: true,
-            anoAdivinado: true
-          });
-        }
-        setInputStatus("");
-      }, 800);
     } else {
       setInputStatus("error");
       setIntentosFallidos(prev => [
@@ -205,22 +271,14 @@ const JuegoMultijugador = () => {
       ]);
       
       setErrorCount(prev => prev + 1);
+      setMaxImageIndex(prev => Math.min(prev + 1, 3));
+      setCurrentImageIndex(prev => Math.min(prev + 1, 3));
       
-      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
-      setMaxImageIndex(nuevoMaxIndex);
-      setCurrentImageIndex(nuevoMaxIndex);
-      
-      // Cambiar de turno solo si no se acertó todo
-      setCurrentPlayer((currentPlayer + 1) % players.length);
+      changePlayer();
     }
 
     setPlayers(updatedPlayers);
     setGameState(newGameState);
-    
-    // Limpiar campos
-    if (marcaCorrecta || currentVehiculoIndex === 2) setMarca("");
-    if (modeloCorrecto) setModelo("");
-    if (anoCorrecto) setAnoFabricacion("");
 
     if (inputStatus === "error") {
       setTimeout(() => setInputStatus(""), 300);
@@ -288,31 +346,14 @@ const JuegoMultijugador = () => {
     );
   }
 
-  if (currentVehiculoIndex >= vehiculosDelDia.length) {
+  if (showWinnerModal) {
     return (
       <div className={containerClass}>
         <Header />
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-md-8">
-              <div className="text-center success-container">
-                <h2 className="success-message">¡Juego completado!</h2>
-                <div className="final-scores mt-4">
-                  <h3>Puntuaciones Finales</h3>
-                  {players.map((player, index) => (
-                    <div key={index} className={`final-score ${player.score === Math.max(...players.map(p => p.score)) ? 'winner' : ''}`}>
-                      {player.name}: {player.score} puntos
-                      {player.score === Math.max(...players.map(p => p.score)) && <span> 🏆</span>}
-                    </div>
-                  ))}
-                </div>
-                <Link to="/" className="btn btn-primary mt-3">
-                  <FontAwesomeIcon icon={faHome} /> Volver al inicio
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+        <WinnerModal 
+          players={players} 
+          onClose={() => navigate("/")} 
+        />
       </div>
     );
   }
@@ -333,7 +374,11 @@ const JuegoMultijugador = () => {
                 </Link>
               </div>
               <div className="card-body">
-                <PlayerTurnIndicator currentPlayer={currentPlayer} players={players} />
+                <PlayerTurnIndicator 
+                  currentPlayer={currentPlayer} 
+                  players={players} 
+                  isChanging={isChangingPlayer}
+                />
                 
                 <div className="position-relative">
                   <img
@@ -394,8 +439,8 @@ const JuegoMultijugador = () => {
                       className="btn btn-primary flex-fill mt-2 guess-button"
                       onClick={handleGuess}
                       disabled={
-                        (currentVehiculoIndex !== 2 && (gameState.marcaAdivinada || !marca)) &&
-                        (gameState.modeloAdivinado || !modelo) &&
+                        (currentVehiculoIndex !== 2 && (gameState.marcaAdivinada || !marca)) ||
+                        (gameState.modeloAdivinado || !modelo) ||
                         (gameState.anoAdivinado || !anoFabricacion)
                       }
                     >

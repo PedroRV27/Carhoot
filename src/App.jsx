@@ -358,9 +358,6 @@ const App = () => {
               </Form>
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-                Cancelar
-              </Button>
               <Button
                 variant="primary"
                 onClick={async () => {

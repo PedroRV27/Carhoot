@@ -324,11 +324,11 @@ input.error {
 
 
 /*Puntos de navegacion*/
-.dot {
+.light-theme .dot {
   height: 15px;
   width: 15px;
   margin: 0 5px;
-  background-color: #fdfdfd;
+  background-color: #ffffff;
   border-radius: 50%;
   display: inline-block;
   transition: background-color 0.3s ease;
@@ -337,7 +337,7 @@ input.error {
   border: 1px solid #444444;
 }
 
-.dot.active {
+.light-theme .dot.active {
   background-color: #000000;
 }
 
@@ -482,7 +482,7 @@ input.error {
   transition: background-color 0.3s ease;
   border: none;
   cursor: pointer;
-  border: 1px solid #444444;
+  border: 1px solid #868686;
 }
 
 .dark-theme .dot.active {
@@ -508,7 +508,8 @@ input.error {
   align-items: center;
   margin: 0 auto;
   max-width: 200px;
-  margin-top: -5px;
+  margin-top: -10px;
+  margin-bottom: 5px;
 }
 
 .resultado-container {
@@ -516,7 +517,7 @@ input.error {
   flex-direction: row; /* Mantiene los elementos en fila */
   gap: 5px; /* Espacio entre los elementos */
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: -18px;
   
 }
 .dark-theme .resultado-container {

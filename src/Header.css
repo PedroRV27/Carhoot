@@ -309,6 +309,10 @@ input:checked + .slider:before {
 .close-game-modal:hover {
   opacity: 0.8;
 }
+
+.game-icon {
+  font-size: 1.5rem;
+}
   
   /* Estilos para móviles y tablets */
   @media (max-width: 768px) {

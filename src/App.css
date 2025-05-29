@@ -4,3 +4,7 @@
     object-fit: cover; /* Esto asegura que la imagen se ajuste al tamaño sin distorsionarse */
     margin-bottom: 10px; /* Espacio entre imágenes */
   }
+
+.btn-warning{
+  margin-bottom: 2px;
+}

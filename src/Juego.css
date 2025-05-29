@@ -806,3 +806,67 @@ input.error {
 .multiplayer-btn .svg-inline--fa {
   margin-right: 0.25rem;
 }
+
+
+/*Si no hay vehiculo*/
+/* Estilos para el mensaje de no vehículo disponible */
+.no-vehicle-card {
+  margin-top: 2rem;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-vehicle-title {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.no-vehicle-message {
+  font-size: 1.2rem;
+  color: var(--text-color);
+}
+
+.no-vehicle-submessage {
+  color: var(--secondary-text-color);
+}
+
+.no-vehicle-button {
+  padding: 0.5rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 50px;
+}
+
+/* Mantener estilos del tema */
+.dark-theme .no-vehicle-card {
+  background-color: var(--dark-bg-color);
+  color: var(--dark-text-color);
+}
+
+.dark-theme .no-vehicle-title {
+  color: var(--dark-primary-color);
+}
+
+.dark-theme .no-vehicle-message {
+  color: var(--dark-text-color);
+}
+
+.dark-theme .no-vehicle-submessage {
+  color: var(--dark-secondary-text-color);
+}
+
+.light-theme .no-vehicle-card {
+  background-color: var(--light-bg-color);
+  color: var(--light-text-color);
+}
+
+.light-theme .no-vehicle-title {
+  color: var(--light-primary-color);
+}
+
+.light-theme .no-vehicle-message {
+  color: var(--light-text-color);
+}
+
+.light-theme .no-vehicle-submessage {
+  color: var(--light-secondary-text-color);
+}

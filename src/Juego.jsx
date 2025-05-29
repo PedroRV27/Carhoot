@@ -58,17 +58,25 @@ const Juego = () => {
   const [showHintModal, setShowHintModal] = useState(false);
   const [revealedLetters, setRevealedLetters] = useState(0);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [noVehicleToday, setNoVehicleToday] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
   checkAndResetDailyProgress();
   const fetchData = async () => {
-    const coches = await getCoches();
-    const hoy = new Date().toISOString().split("T")[0];
-    const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-    setVehiculoDelDia(vehiculo);
-    
-    if (vehiculo) {
-      loadProgress();
+    try {
+      const coches = await getCoches();
+      const hoy = new Date().toISOString().split("T")[0];
+      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+      
+      if (vehiculo) {
+        setVehiculoDelDia(vehiculo);
+        loadProgress();
+      } else {
+        setNoVehicleToday(true);
+      }
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+      setNoVehicleToday(true);
     }
   };
 
@@ -331,6 +339,29 @@ useEffect(() => {
   };
 
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
+
+  if (noVehicleToday) {
+  return (
+    <div className={containerClass}>
+      <Header />
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-md-8">
+            <div className="card no-vehicle-card">
+              <div className="card-body text-center">
+                <h2 className="mb-4 no-vehicle-title">No hay vehículo del día disponible</h2>
+                <p className="lead no-vehicle-message">
+                  Lo sentimos, hoy no hay ningún vehículo para adivinar.
+                </p>
+                <p className="no-vehicle-submessage">Por favor, vuelve a intentarlo más tarde o mañana.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   if (!vehiculoDelDia) {
     return (

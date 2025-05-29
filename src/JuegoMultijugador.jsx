@@ -6,7 +6,7 @@ import Header from "./Header";
 import { Link, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLightbulb, faHome, faArrowLeft, faTrophy } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb, faHome, faArrowLeft, faTrophy, faGamepad } from "@fortawesome/free-solid-svg-icons";
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -326,49 +326,73 @@ const JuegoMultijugador = () => {
     );
   }
 
-  if (showPlayerNamesModal) {
-    return (
-      <div className={`player-names-modal ${containerClass}`}>
-        <div className="player-names-container">
-          <button 
-            onClick={() => navigate("/")} 
-            className="btn btn-back"
-          >
-            <FontAwesomeIcon icon={faArrowLeft} /> Volver
-          </button>
-          <h2>Ingresa los nombres de los jugadores</h2>
-          <form onSubmit={handlePlayerNameSubmit}>
-            <div className="mb-3">
-              <label htmlFor="player1" className="form-label">Jugador 1:</label>
+if (showPlayerNamesModal) {
+  return (
+    <div className={`player-names-modal-wrapper ${containerClass}`}>
+      <div className="road-background"></div>
+      <div className="modal-blur-overlay"></div>
+      
+      <div className="player-names-modal">
+        <div className="modal-content">
+          <div className="modal-header">
+          <div className="btn-back-container">
+            <button 
+              onClick={() => navigate("/")} 
+              className="btn btn-back"
+            >
+              <FontAwesomeIcon icon={faArrowLeft} /> Volver
+            </button>
+          </div>
+          <div className="modal-title-container">
+            <h2 className="modal-title">
+              <FontAwesomeIcon icon={faGamepad} className="game-icon" />
+              Configuración de Jugadores
+            </h2>
+          </div>
+        </div>
+          
+          <form onSubmit={handlePlayerNameSubmit} className="modal-form">
+            <div className="form-group">
+              <label htmlFor="player1" className="form-label">
+                <span className="player-number">Jugador 1</span>
+                <span className="input-hint">(Nombre o alias)</span>
+              </label>
               <input
                 type="text"
                 id="player1"
-                className="form-control"
+                className="form-control player-input"
                 value={tempPlayerNames[0]}
                 onChange={(e) => handlePlayerNameChange(0, e.target.value)}
                 required
                 autoFocus
               />
             </div>
-            <div className="mb-3">
-              <label htmlFor="player2" className="form-label">Jugador 2:</label>
+            
+            <div className="form-group">
+              <label htmlFor="player2" className="form-label">
+                <span className="player-number">Jugador 2</span>
+                <span className="input-hint">(Nombre o alias)</span>
+              </label>
               <input
                 type="text"
                 id="player2"
-                className="form-control"
+                className="form-control player-input"
                 value={tempPlayerNames[1]}
                 onChange={(e) => handlePlayerNameChange(1, e.target.value)}
                 required
               />
             </div>
-            <button type="submit" className="btn btn-primary">
-              Comenzar Juego
+            
+            <button type="submit" className="btn start-game-button">
+              <FontAwesomeIcon icon={faTrophy} className="button-icon" />
+              Comenzar Partida
             </button>
           </form>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (showWinnerModal) {
     return (

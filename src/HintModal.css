@@ -1,77 +1,199 @@
-/* Estilos para el modal en tema oscuro */
+/* HintModal.css - Complete Version */
+
+/* Base Styles and Variables */
+:root {
+  --accent-gold: gold;
+  --dark-bg: rgba(30, 30, 30, 0.92);
+  --light-bg: rgba(248, 248, 248, 0.96);
+  --text-dark: #f0f0f0;
+  --text-light: #333333; /* Dark gray for better readability */
+  --border-dark: rgba(255, 255, 255, 0.12);
+  --border-light: rgba(0, 0, 0, 0.08);
+}
+
+/* Main Modal Structure */
+.hint-modal .modal-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.hint-modal .modal-content {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 500px;
+  border: none;
+  overflow: hidden;
+}
+
+/* Transparent Backdrop */
+.custom-backdrop {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(5px);
+}
+
+/* Dark Theme Styles */
 .dark-modal .modal-content {
-  background-color:#444 ; /* Fondo oscuro */
-  color: #ececec; /* Texto claro */
-  border: 1px solid #444; /* Borde más claro */
+  background: var(--dark-bg);
+  color: var(--text-dark);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-.dark-modal .modal-header {
-  border-bottom: 1px solid #444;
-  background-color:#444 ; 
+.dark-modal .modal-header-custom {
+  border-bottom: 1px solid var(--border-dark);
+  background: rgba(30, 30, 30, 0.8);
 }
 
-.dark-modal .modal-footer {
-  border-top: 1px solid #444; /* Borde superior del footer */
+.dark-modal .modal-body-custom {
+  background: rgba(20, 20, 20, 0.85);
 }
 
-.dark-modal .close {
-  color: #fff; /* Color del botón de cerrar */
-}
-
-.dark-modal .close:hover {
-  color: #ccc; /* Color del botón de cerrar al pasar el mouse */
-}
-
-.dark-modal .btn-primary {
-  background-color: #000000; /* Color del botón primario */
-  border-color: #ffffff;
-  color: #fff; /* Texto del botón en claro */
-}
-
-.dark-modal .btn-primary:hover {
-  background-color: #555 !important; /* Color del botón primario al pasar el mouse */
-}
-
-/* Estilos para el modal en tema claro */
+/* Light Theme Styles - Corrected for black text */
 .light-modal .modal-content {
-   /* Fondo claro */
-  color: #000; /* Texto oscuro */
-  border: 1px solid #ddd; /* Borde más oscuro */
+  background: var(--light-bg);
+  color: var(--text-light); /* Ensures black text */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-.light-modal .modal-header {
-  border-bottom: 1px solid #ddd; /* Borde inferior del header */
+.light-modal .modal-header-custom {
+  border-bottom: 1px solid var(--border-light);
+  background: rgba(240, 240, 240, 0.9);
+  color: var(--text-light); /* Black text in header */
 }
 
-.light-modal .modal-footer {
-  border-top: 1px solid #ddd; /* Borde superior del footer */
+.light-modal .modal-body-custom {
+  background: rgba(250, 250, 250, 0.95);
+  color: var(--text-light); /* Black text in body */
 }
 
-.light-modal .close {
-  color: #000; /* Color del botón de cerrar */
+/* Common Elements */
+.modal-header-custom {
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px 12px 0 0;
 }
 
-.light-modal .close:hover {
-  color: #555; /* Color del botón de cerrar al pasar el mouse */
+.modal-title-custom {
+  font-weight: 600;
+  font-size: 1.4rem;
+  letter-spacing: 0.25px;
+  color: inherit; /* Inherits from parent theme */
+  
 }
 
-.light-modal .btn-primary {
-  background-color: #ffffff; /* Color del botón primario */
-  border-color: #000000;
-  color: #000; /* Texto del botón en oscuro */
+.modal-body-custom {
+  padding: 1.75rem 1.5rem;
+  border-radius: 0 0 12px 12px;
 }
 
-.light-modal .btn-primary:hover {
-  background-color: #f1f1f1; /* Color del botón primario al pasar el mouse */
-  border-color: #4d4d4d;
+.hint-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-/* Estilos para hacer el fondo del modal transparente */
-.modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.5) !important; /* Fondo semitransparente */
+.hint-label {
+  margin: 0;
+  font-size: 1.05rem;
+  opacity: 0.9;
+  color: inherit; /* Inherits from parent theme */
 }
 
-/* Hacer que el contenedor del modal sea transparente mientras mantiene el contenido con su color */
-.modal {
-  background-color: transparent !important;
+.revealed-text {
+  font-family: 'Courier New', monospace;
+  font-size: 1.35rem;
+  letter-spacing: 1.5px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Dark theme revealed text */
+.dark-modal .revealed-text {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-dark);
+}
+
+/* Light theme revealed text */
+.light-modal .revealed-text {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-light); /* Black text */
+}
+
+.attempts-remaining {
+  margin: 0;
+  font-size: 1.05rem;
+  color: inherit; /* Inherits from parent theme */
+}
+
+.attempts-count {
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-left: 0.25rem;
+}
+
+/* Animations */
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal.fade .modal-dialog {
+  animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+  .hint-modal .modal-content {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .modal-header-custom {
+    padding: 1rem;
+  }
+  
+  .modal-body-custom {
+    padding: 1.5rem 1rem;
+  }
+  
+  .modal-title-custom {
+    font-size: 1.25rem;
+  }
+  
+  .revealed-text {
+    font-size: 1.2rem;
+    padding: 0.6rem 1rem;
+  }
+}
+
+/* Close Button Styling */
+.modal-header .btn-close {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.modal-header .btn-close:hover {
+  opacity: 1;
+}
+
+.dark-modal .modal-header .btn-close {
+  filter: invert(1) brightness(0.8);
+}
+
+.light-modal .modal-header .btn-close {
+  filter: brightness(0.5);
+}
+
+.light-modal .modal-title-custom {
+  color: #000000 !important; 
+  
 }

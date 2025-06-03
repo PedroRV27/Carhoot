@@ -299,7 +299,7 @@
 }
 
 /* MODAL MODERNO PARA NOMBRES DE JUGADORES */
-.player-names-modal-wrapper {
+.jm-player-names-modal-wrapper {
   position: fixed;
   top: 0;
   left: 0;
@@ -311,7 +311,7 @@
   z-index: 1000;
 }
 
-.road-background {
+.jm-road-background {
   position: fixed;
   top: 0;
   left: 0;
@@ -322,7 +322,7 @@
   background-position: center;
 }
 
-.modal-blur-overlay {
+.jm-modal-blur-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -332,14 +332,14 @@
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-.player-names-modal {
+.jm-player-names-modal {
   width: 100%;
   max-width: 500px;
   z-index: 1001;
   position: relative;
 }
 
-.modal-content {
+.jm-modal-content {
   background: linear-gradient(145deg, #2c3e50, #34495e);
   border-radius: 15px;
   padding: 2rem;
@@ -347,7 +347,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.modal-header {
+.jm-modal-header {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -355,7 +355,7 @@
   position: relative;
 }
 
-.modal-title {
+.jm-modal-title {
   color: #fff;
   font-size: 1.8rem;
   margin-bottom: 1.5rem;
@@ -365,8 +365,7 @@
   gap: 0.8rem;
 }
 
-
-.btn-back {
+.jm-btn-back {
   position: absolute;
   top: 0;
   left: 0;
@@ -382,42 +381,42 @@
   gap: 0.5rem;
 }
 
-.btn-back:hover {
+.jm-btn-back:hover {
   background-color: rgba(255, 255, 255, 0.2);
   transform: translateX(-3px);
 }
 
-.modal-form {
+.jm-modal-form {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.form-group {
+.jm-form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.form-label {
+.jm-form-label {
   display: flex;
   flex-direction: column;
   color: #bdc3c7;
   font-size: 0.9rem;
 }
 
-.player-number {
+.jm-player-number {
   color: #fff;
   font-weight: 600;
   font-size: 1rem;
 }
 
-.input-hint {
+.jm-input-hint {
   font-size: 0.8rem;
   opacity: 0.7;
 }
 
-.player-input {
+.jm-player-input {
   background-color: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
@@ -426,14 +425,14 @@
   transition: all 0.3s ease;
 }
 
-.player-input:focus {
+.jm-player-input:focus {
   background-color: rgba(0, 0, 0, 0.5);
   border-color: #3498db;
   box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
   color: #fff;
 }
 
-.start-game-button {
+.jm-start-game-button {
   background: linear-gradient(135deg, #f39c12, #f1c40f);
   color: #2c3e50;
   border: none;
@@ -450,15 +449,108 @@
   box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
 }
 
-.start-game-button:hover {
+.jm-start-game-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
 }
 
-.button-icon {
+.jm-button-icon {
   font-size: 1.2rem;
 }
 
+/* Estilos para tema claro */
+.light-theme .jm-modal-content {
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+}
+
+.light-theme .jm-modal-title,
+.light-theme .jm-player-number {
+  color: #2c3e50;
+}
+
+.light-theme .jm-form-label,
+.light-theme .jm-input-hint {
+  color: #7f8c8d;
+}
+
+.light-theme .jm-player-input {
+  background-color: #f8f9fa;
+  border: 1px solid #dfe6e9;
+  color: #2d3436;
+}
+
+.light-theme .jm-player-input:focus {
+  background-color: #fff;
+  border-color: #74b9ff;
+  box-shadow: 0 0 0 0.2rem rgba(116, 185, 255, 0.25);
+}
+
+.light-theme .jm-btn-back {
+  background-color: #dfe6e9;
+  color: #2d3436;
+}
+
+.light-theme .jm-btn-back:hover {
+  background-color: #b2bec3;
+}
+
+/* Añadimos estilos específicos para la estructura del modal */
+.jm-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.jm-modal-title-container {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  order: 2;
+}
+
+.jm-btn-back-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  order: 1;
+  margin-bottom: 1rem;
+}
+
+.jm-modal-title {
+  color: #fff;
+  font-size: 1.8rem;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+}
+
+.jm-btn-back {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ecf0f1;
+  border: none;
+  border-radius: 50px;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  transform: translateY(-25px);
+  
+}
+
+/* Ajustes para tema claro */
+.light-theme .jm-modal-title {
+  color: #2c3e50;
+}
+
+.light-theme .jm-btn-back {
+  background-color: #dfe6e9;
+  color: #2d3436;
+}
 /* Estilos para tema claro */
 .light-theme .modal-content {
   background: linear-gradient(145deg, #ffffff, #f8f9fa);

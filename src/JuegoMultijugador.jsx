@@ -328,69 +328,69 @@ const JuegoMultijugador = () => {
 
 if (showPlayerNamesModal) {
   return (
-    <div className={`player-names-modal-wrapper ${containerClass}`}>
-      <div className="road-background"></div>
-      <div className="modal-blur-overlay"></div>
-      
-      <div className="player-names-modal">
-        <div className="modal-content">
-          <div className="modal-header">
-          <div className="btn-back-container">
-            <button 
-              onClick={() => navigate("/")} 
-              className="btn btn-back"
-            >
-              <FontAwesomeIcon icon={faArrowLeft} /> Volver
-            </button>
-          </div>
-          <div className="modal-title-container">
-            <h2 className="modal-title">
-              <FontAwesomeIcon icon={faGamepad} className="game-icon" />
-              Configuración de Jugadores
-            </h2>
-          </div>
-        </div>
-          
-          <form onSubmit={handlePlayerNameSubmit} className="modal-form">
-            <div className="form-group">
-              <label htmlFor="player1" className="form-label">
-                <span className="player-number">Jugador 1</span>
-                <span className="input-hint">(Nombre o alias)</span>
-              </label>
-              <input
-                type="text"
-                id="player1"
-                className="form-control player-input"
-                value={tempPlayerNames[0]}
-                onChange={(e) => handlePlayerNameChange(0, e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="player2" className="form-label">
-                <span className="player-number">Jugador 2</span>
-                <span className="input-hint">(Nombre o alias)</span>
-              </label>
-              <input
-                type="text"
-                id="player2"
-                className="form-control player-input"
-                value={tempPlayerNames[1]}
-                onChange={(e) => handlePlayerNameChange(1, e.target.value)}
-                required
-              />
-            </div>
-            
-            <button type="submit" className="btn start-game-button">
-              <FontAwesomeIcon icon={faTrophy} className="button-icon" />
-              Comenzar Partida
-            </button>
-          </form>
-        </div>
+    <div className={`jm-player-names-modal-wrapper ${containerClass}`}>
+  <div className="jm-road-background"></div>
+  <div className="jm-modal-blur-overlay"></div>
+  
+  <div className="jm-player-names-modal">
+    <div className="jm-modal-content">
+      <div className="jm-modal-header">
+      <div className="jm-btn-back-container">
+        <button 
+          onClick={() => navigate("/")} 
+          className="btn jm-btn-back"
+        >
+          <FontAwesomeIcon icon={faArrowLeft} /> Volver
+        </button>
+      </div>
+      <div className="jm-modal-title-container">
+        <h2 className="jm-modal-title">
+          <FontAwesomeIcon icon={faGamepad} className="jm-button-icon" />
+          Configuración de Jugadores
+        </h2>
       </div>
     </div>
+      
+      <form onSubmit={handlePlayerNameSubmit} className="jm-modal-form">
+        <div className="jm-form-group">
+          <label htmlFor="player1" className="jm-form-label">
+            <span className="jm-player-number">Jugador 1</span>
+            <span className="jm-input-hint">(Nombre o alias)</span>
+          </label>
+          <input
+            type="text"
+            id="player1"
+            className="form-control jm-player-input"
+            value={tempPlayerNames[0]}
+            onChange={(e) => handlePlayerNameChange(0, e.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+        
+        <div className="jm-form-group">
+          <label htmlFor="player2" className="jm-form-label">
+            <span className="jm-player-number">Jugador 2</span>
+            <span className="jm-input-hint">(Nombre o alias)</span>
+          </label>
+          <input
+            type="text"
+            id="player2"
+            className="form-control jm-player-input"
+            value={tempPlayerNames[1]}
+            onChange={(e) => handlePlayerNameChange(1, e.target.value)}
+            required
+          />
+        </div>
+        
+        <button type="submit" className="btn jm-start-game-button">
+          <FontAwesomeIcon icon={faTrophy} className="jm-button-icon" />
+          Comenzar Partida
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
   );
 }
 

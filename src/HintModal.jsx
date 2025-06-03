@@ -1,7 +1,8 @@
 import React, { useContext } from "react";
 import Modal from "react-bootstrap/Modal";
-import { AppContext } from "./context/AppContext"; // Importa el contexto
-import "./HintModal.css"; // Importa los estilos
+import { AppContext } from "./context/AppContext";
+import "./HintModal.css";
+
 const HintModal = ({ show, onHide, revealedText, attemptsRemaining }) => {
   const { theme } = useContext(AppContext);
   
@@ -10,17 +11,26 @@ const HintModal = ({ show, onHide, revealedText, attemptsRemaining }) => {
       show={show}
       onHide={onHide}
       centered
-      className={`${theme}-modal`}
-      backdropClassName="transparent-backdrop" // Opcional: clase adicional para el fondo
+      size="md"
+      className={`hint-modal ${theme}-modal`}
+      backdropClassName="custom-backdrop"
+      animation={true}
     >
-      <Modal.Header closeButton>
-        <Modal.Title>Pista</Modal.Title>
+      <Modal.Header closeButton className="modal-header-custom">
+        <Modal.Title className="modal-title-custom">Pista Revelada</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
-        <p>Letras reveladas: <strong>{revealedText}</strong></p>
-        <p>Intentos restantes para la próxima letra: {attemptsRemaining}</p>
+      <Modal.Body className="modal-body-custom">
+        <div className="hint-content">
+          <p className="hint-label">Letras reveladas:</p>
+          <div className="revealed-text">{revealedText}</div>
+          <p className="attempts-remaining">
+            Intentos restantes para próxima letra: 
+            <span className="attempts-count"> {attemptsRemaining}</span>
+          </p>
+        </div>
       </Modal.Body>
     </Modal>
   );
 };
+
 export default HintModal;

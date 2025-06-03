@@ -222,7 +222,7 @@ const App = () => {
               />
             </Col>
             <Col>
-              <Button onClick={() => setShowAddModal(true)}>Añadir Coche</Button>
+              <Button onClick={() => setShowAddModal(true)} >Añadir Coche</Button>
             </Col>
           </Row>
 
@@ -312,7 +312,7 @@ const App = () => {
           {/* Modal para añadir coche */}
           <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
             <Modal.Header closeButton>
-              <Modal.Title>Añadir Coche</Modal.Title>
+              <Modal.Title style={{ color: 'black' }}>Añadir Coche</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               <Form>
@@ -375,7 +375,7 @@ const App = () => {
           {/* Modal para editar coche */}
           <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
             <Modal.Header closeButton>
-              <Modal.Title>Editar Coche</Modal.Title>
+              <Modal.Title style={{ color: 'black' }}>Editar Coche</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               <Form>
@@ -444,7 +444,7 @@ const App = () => {
           {/* Modal de confirmación para eliminar */}
           <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
             <Modal.Header closeButton>
-              <Modal.Title>Confirmar Eliminación</Modal.Title>
+              <Modal.Title style={{ color: 'black' }}>Confirmar Eliminación</Modal.Title>
             </Modal.Header>
             <Modal.Body>
               ¿Estás seguro de que deseas eliminar el coche {cocheToDelete?.Marca} {cocheToDelete?.Modelo}?

@@ -77,7 +77,7 @@ const WinnerModal = ({ players, onClose, t }) => {
       <div className="winner-modal">
         <div className="winner-modal-header">
           <FontAwesomeIcon icon={faTrophy} className="trophy-icon" />
-          <h2>{t('multiplayer.gameCompleted')}</h2>
+          <h2 class="JuegoCompletado">{t('multiplayer.gameCompleted')}</h2>
         </div>
         
         <div className="winner-modal-body">

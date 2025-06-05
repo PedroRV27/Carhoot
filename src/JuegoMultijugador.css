@@ -225,15 +225,26 @@
   align-items: center;
   z-index: 1000;
 }
-
-.winner-modal {
-  background-color: var(--modal-bg);
+.light-theme .winner-modal {
+  background: linear-gradient(145deg, #ffffff, #e2e2e2);
   border-radius: 12px;
   padding: 2rem;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   text-align: center;
+  border: #000000 1px solid;
+}
+
+.dark-theme .winner-modal {
+  background: linear-gradient(145deg, #000000, #1d1d1d);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  border: #000000 1px solid;
 }
 
 .winner-modal-header {
@@ -283,7 +294,14 @@
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+  color:rgb(255, 255, 255);
+  background: linear-gradient(135deg, #f39c12, #f1c40f);
+  border:none;
 }
+.dark-theme .winner-modal-button{
+  color:black;
+}
+
 
 /*Disable fields*/
 .disabled-field {

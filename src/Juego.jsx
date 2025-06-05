@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "./context/AppContext";
 import { getCoches } from "./services/api";
+import { useTranslation } from "react-i18next"; // Agregar importación
 import "./Juego.css";
 import Header from "./Header";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -39,6 +40,7 @@ const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
 
 const Juego = () => {
   const { theme, language } = useContext(AppContext);
+  const { t } = useTranslation(); // Agregar hook de traducción
 
   const [vehiculoDelDia, setVehiculoDelDia] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -60,88 +62,86 @@ const Juego = () => {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [noVehicleToday, setNoVehicleToday] = useState(false);
 
-useEffect(() => {
-  checkAndResetDailyProgress();
-  const fetchData = async () => {
-    try {
+  useEffect(() => {
+    checkAndResetDailyProgress();
+    const fetchData = async () => {
+      try {
+        const coches = await getCoches();
+        const hoy = new Date().toISOString().split("T")[0];
+        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+        
+        if (vehiculo) {
+          setVehiculoDelDia(vehiculo);
+          loadProgress();
+        } else {
+          setNoVehicleToday(true);
+        }
+      } catch (error) {
+        console.error("Error fetching vehicles:", error);
+        setNoVehicleToday(true);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (vehiculoDelDia) {
+      loadProgress();
+    }
+  }, [vehiculoDelDia]);
+
+  // Efecto para guardar progreso
+  useEffect(() => {
+    if (!vehiculoDelDia) return;
+
+    const progressData = {
+      step,
+      isCompleted,
+      intentosFallidos,
+      errorCount,
+      maxImageIndex,
+      revealedLetters,
+      currentImageIndex,
+    };
+    
+    saveGameProgress(vehiculoDelDia, progressData);
+  }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, vehiculoDelDia]);
+
+  useEffect(() => {
+    const fetchData = async () => {
       const coches = await getCoches();
       const hoy = new Date().toISOString().split("T")[0];
       const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+      setVehiculoDelDia(vehiculo);
       
       if (vehiculo) {
-        setVehiculoDelDia(vehiculo);
-        loadProgress();
-      } else {
-        setNoVehicleToday(true);
-      }
-    } catch (error) {
-      console.error("Error fetching vehicles:", error);
-      setNoVehicleToday(true);
-    }
-  };
-
-  fetchData();
-}, []);
-
-  useEffect(() => {
-  if (vehiculoDelDia) {
-    loadProgress();
-  }
-}, [vehiculoDelDia]);
-
-
-// Efecto para guardar progreso
-useEffect(() => {
-  if (!vehiculoDelDia) return;
-
-  const progressData = {
-    step,
-    isCompleted,
-    intentosFallidos,
-    errorCount,
-    maxImageIndex,
-    revealedLetters,
-    currentImageIndex,
-  };
-  
-  saveGameProgress(vehiculoDelDia, progressData);
-}, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, vehiculoDelDia]);
-
-
-  useEffect(() => {
-  const fetchData = async () => {
-    const coches = await getCoches();
-    const hoy = new Date().toISOString().split("T")[0];
-    const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-    setVehiculoDelDia(vehiculo);
-    
-    if (vehiculo) {
-      // Cargar progreso existente (compatible con ambos modos)
-      const savedData = loadGameProgress(vehiculo);
-      if (savedData) {
-        setStep(savedData.step || 1);
-        setIsCompleted(savedData.isCompleted || false);
-        setIntentosFallidos(savedData.intentosFallidos || {
-          marca: [],
-          modelo: [],
-          anoFabricacion: []
-        });
-        setErrorCount(savedData.errorCount || 0);
-        setMaxImageIndex(savedData.maxImageIndex || 0);
-        setRevealedLetters(savedData.revealedLetters || 0);
-        setCurrentImageIndex(savedData.currentImageIndex || 0);
-        
-        // Si el juego estaba completado, mostrar la última imagen
-        if (savedData.isCompleted) {
-          setMaxImageIndex(4);
-          setCurrentImageIndex(4);
+        // Cargar progreso existente (compatible con ambos modos)
+        const savedData = loadGameProgress(vehiculo);
+        if (savedData) {
+          setStep(savedData.step || 1);
+          setIsCompleted(savedData.isCompleted || false);
+          setIntentosFallidos(savedData.intentosFallidos || {
+            marca: [],
+            modelo: [],
+            anoFabricacion: []
+          });
+          setErrorCount(savedData.errorCount || 0);
+          setMaxImageIndex(savedData.maxImageIndex || 0);
+          setRevealedLetters(savedData.revealedLetters || 0);
+          setCurrentImageIndex(savedData.currentImageIndex || 0);
+          
+          // Si el juego estaba completado, mostrar la última imagen
+          if (savedData.isCompleted) {
+            setMaxImageIndex(4);
+            setCurrentImageIndex(4);
+          }
         }
       }
-    }
-  };
+    };
 
-  fetchData();
-}, []);
+    fetchData();
+  }, []);
 
   const fetchVehiculoDelDia = async () => {
     const coches = await getCoches();
@@ -151,21 +151,21 @@ useEffect(() => {
   };
 
   const loadProgress = () => {
-  const savedData = loadGameProgress(vehiculoDelDia);
-  if (savedData) {
-    setStep(savedData.step || 1);
-    setIsCompleted(savedData.isCompleted || false);
-    setIntentosFallidos(savedData.intentosFallidos || {
-      marca: [],
-      modelo: [],
-      anoFabricacion: []
-    });
-    setErrorCount(savedData.errorCount || 0);
-    setMaxImageIndex(savedData.maxImageIndex || 0);
-    setRevealedLetters(savedData.revealedLetters || 0);
-    setCurrentImageIndex(savedData.currentImageIndex || 0);
-  }
-};
+    const savedData = loadGameProgress(vehiculoDelDia);
+    if (savedData) {
+      setStep(savedData.step || 1);
+      setIsCompleted(savedData.isCompleted || false);
+      setIntentosFallidos(savedData.intentosFallidos || {
+        marca: [],
+        modelo: [],
+        anoFabricacion: []
+      });
+      setErrorCount(savedData.errorCount || 0);
+      setMaxImageIndex(savedData.maxImageIndex || 0);
+      setRevealedLetters(savedData.revealedLetters || 0);
+      setCurrentImageIndex(savedData.currentImageIndex || 0);
+    }
+  };
 
   const handleInputChange = (e, field) => {
     const value = e.target.value;
@@ -183,132 +183,132 @@ useEffect(() => {
   };
 
   const handleGuess = () => {
-  if (!vehiculoDelDia) return;
+    if (!vehiculoDelDia) return;
 
-  const validateInput = (input, correctValue) =>
-    input.toLowerCase() === correctValue.toLowerCase();
+    const validateInput = (input, correctValue) =>
+      input.toLowerCase() === correctValue.toLowerCase();
 
-  const nuevoIntento = (field, value) => {
-    const newIntentosFallidos = {
-      ...intentosFallidos,
-      [field]: [...intentosFallidos[field], value]
+    const nuevoIntento = (field, value) => {
+      const newIntentosFallidos = {
+        ...intentosFallidos,
+        [field]: [...intentosFallidos[field], value]
+      };
+      const newErrorCount = errorCount + 1;
+      
+      setIntentosFallidos(newIntentosFallidos);
+      setErrorCount(newErrorCount);
+
+      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
+      setMaxImageIndex(nuevoMaxIndex);
+      setCurrentImageIndex(nuevoMaxIndex);
+
+      return { newIntentosFallidos, newErrorCount, nuevoMaxIndex };
     };
-    const newErrorCount = errorCount + 1;
-    
-    setIntentosFallidos(newIntentosFallidos);
-    setErrorCount(newErrorCount);
 
-    const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
-    setMaxImageIndex(nuevoMaxIndex);
-    setCurrentImageIndex(nuevoMaxIndex);
+    // Función para guardar progreso normalizado
+    const saveProgress = (newState = {}) => {
+      saveGameProgress(vehiculoDelDia, {
+        modo: 'normal', // Identificar que es el modo normal
+        step: newState.step !== undefined ? newState.step : step,
+        isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
+        intentosFallidos: newState.intentosFallidos || intentosFallidos,
+        errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
+        maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
+        revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
+        currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
+        totalAttemptsUsed: (newState.errorCount || errorCount) + (intentosFallidos.marca.length + intentosFallidos.modelo.length + intentosFallidos.anoFabricacion.length)
+      });
+    };
 
-    return { newIntentosFallidos, newErrorCount, nuevoMaxIndex };
-  };
-
-  // Función para guardar progreso normalizado
-  const saveProgress = (newState = {}) => {
-    saveGameProgress(vehiculoDelDia, {
-      modo: 'normal', // Identificar que es el modo normal
-      step: newState.step !== undefined ? newState.step : step,
-      isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
-      intentosFallidos: newState.intentosFallidos || intentosFallidos,
-      errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
-      maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
-      revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
-      currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
-      totalAttemptsUsed: (newState.errorCount || errorCount) + (intentosFallidos.marca.length + intentosFallidos.modelo.length + intentosFallidos.anoFabricacion.length)
-    });
-  };
-
-  if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
-    setInputStatus("success");
-    setTimeout(() => {
-      setStep(2);
+    if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
+      setInputStatus("success");
+      setTimeout(() => {
+        setStep(2);
+        setMarca("");
+        setInputStatus("");
+        setErrorCount(0);
+        setRevealedLetters(0);
+        
+        saveProgress({
+          step: 2,
+          errorCount: 0,
+          revealedLetters: 0
+        });
+      }, 800);
+    } else if (step === 1) {
+      setInputStatus("error");
+      const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("marca", marca);
       setMarca("");
-      setInputStatus("");
-      setErrorCount(0);
-      setRevealedLetters(0);
       
       saveProgress({
-        step: 2,
-        errorCount: 0,
-        revealedLetters: 0
+        intentosFallidos: newIntentosFallidos,
+        errorCount: newErrorCount,
+        maxImageIndex: nuevoMaxIndex,
+        currentImageIndex: nuevoMaxIndex
       });
-    }, 800);
-  } else if (step === 1) {
-    setInputStatus("error");
-    const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("marca", marca);
-    setMarca("");
-    
-    saveProgress({
-      intentosFallidos: newIntentosFallidos,
-      errorCount: newErrorCount,
-      maxImageIndex: nuevoMaxIndex,
-      currentImageIndex: nuevoMaxIndex
-    });
-  } else if (step === 2 && validateInput(modelo, vehiculoDelDia.Modelo)) {
-    setInputStatus("success");
-    setTimeout(() => {
-      setStep(3);
+    } else if (step === 2 && validateInput(modelo, vehiculoDelDia.Modelo)) {
+      setInputStatus("success");
+      setTimeout(() => {
+        setStep(3);
+        setModelo("");
+        setInputStatus("");
+        setErrorCount(0);
+        setRevealedLetters(0);
+        
+        saveProgress({
+          step: 3,
+          errorCount: 0,
+          revealedLetters: 0
+        });
+      }, 800);
+    } else if (step === 2) {
+      setInputStatus("error");
+      const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("modelo", modelo);
       setModelo("");
-      setInputStatus("");
-      setErrorCount(0);
-      setRevealedLetters(0);
       
       saveProgress({
-        step: 3,
-        errorCount: 0,
-        revealedLetters: 0
+        intentosFallidos: newIntentosFallidos,
+        errorCount: newErrorCount,
+        maxImageIndex: nuevoMaxIndex,
+        currentImageIndex: nuevoMaxIndex
       });
-    }, 800);
-  } else if (step === 2) {
-    setInputStatus("error");
-    const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("modelo", modelo);
-    setModelo("");
-    
-    saveProgress({
-      intentosFallidos: newIntentosFallidos,
-      errorCount: newErrorCount,
-      maxImageIndex: nuevoMaxIndex,
-      currentImageIndex: nuevoMaxIndex
-    });
-  } else if (step === 3 && anoFabricacion.toString() === vehiculoDelDia.AnoFabricacion.toString()) {
-    setInputStatus("success");
-    setTimeout(() => {
-      setIsCompleted(true);
-      setInputStatus("");
+    } else if (step === 3 && anoFabricacion.toString() === vehiculoDelDia.AnoFabricacion.toString()) {
+      setInputStatus("success");
+      setTimeout(() => {
+        setIsCompleted(true);
+        setInputStatus("");
+        
+        saveProgress({
+          isCompleted: true
+        });
+      }, 800);
+    } else if (step === 3) {
+      setInputStatus("error");
+      const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("anoFabricacion", anoFabricacion);
+      setAnoFabricacion("");
       
       saveProgress({
-        isCompleted: true
+        intentosFallidos: newIntentosFallidos,
+        errorCount: newErrorCount,
+        maxImageIndex: nuevoMaxIndex,
+        currentImageIndex: nuevoMaxIndex
       });
-    }, 800);
-  } else if (step === 3) {
-    setInputStatus("error");
-    const { newIntentosFallidos, newErrorCount, nuevoMaxIndex } = nuevoIntento("anoFabricacion", anoFabricacion);
-    setAnoFabricacion("");
-    
-    saveProgress({
-      intentosFallidos: newIntentosFallidos,
-      errorCount: newErrorCount,
-      maxImageIndex: nuevoMaxIndex,
-      currentImageIndex: nuevoMaxIndex
-    });
-  }
+    }
 
-  if (inputStatus === "error") {
-    setTimeout(() => setInputStatus(""), 300);
-  }
+    if (inputStatus === "error") {
+      setTimeout(() => setInputStatus(""), 300);
+    }
 
-  if (errorCount + 1 >= 5 && (errorCount + 1 - 5) % 3 === 0) {
-    const newRevealedLetters = revealedLetters + 1;
-    setRevealedLetters(newRevealedLetters);
-    
-    saveProgress({
-      revealedLetters: newRevealedLetters,
-      errorCount: errorCount + 1
-    });
-  }
-};
+    if (errorCount + 1 >= 5 && (errorCount + 1 - 5) % 3 === 0) {
+      const newRevealedLetters = revealedLetters + 1;
+      setRevealedLetters(newRevealedLetters);
+      
+      saveProgress({
+        revealedLetters: newRevealedLetters,
+        errorCount: errorCount + 1
+      });
+    }
+  };
 
   const handleKeyDown = (e) => {
     if (
@@ -341,33 +341,37 @@ useEffect(() => {
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
   if (noVehicleToday) {
-  return (
-    <div className={containerClass}>
-      <Header />
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-md-8">
-            <div className="card no-vehicle-card">
-              <div className="card-body text-center">
-                <h2 className="mb-4 no-vehicle-title">No hay vehículo del día disponible</h2>
-                <p className="lead no-vehicle-message">
-                  Lo sentimos, hoy no hay ningún vehículo para adivinar.
-                </p>
-                <p className="no-vehicle-submessage">Por favor, vuelve a intentarlo más tarde o mañana.</p>
+    return (
+      <div className={containerClass}>
+        <Header />
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-8">
+              <div className="card no-vehicle-card">
+                <div className="card-body text-center">
+                  <h2 className="mb-4 no-vehicle-title">
+                    {t("game.noVehicleTitle")}
+                  </h2>
+                  <p className="lead no-vehicle-message">
+                    {t("game.noVehicleMessage")}
+                  </p>
+                  <p className="no-vehicle-submessage">
+                    {t("game.noVehicleSubmessage")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   if (!vehiculoDelDia) {
     return (
       <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
-        <span>Cargando vehículo del día...</span>
+        <span>{t("game.loading")}</span>
       </div>
     );
   }
@@ -385,7 +389,7 @@ useEffect(() => {
                 </h2>
                 <img
                   src={vehiculoDelDia.Imagenes[4]}
-                  alt="Vehículo del día"
+                  alt={t("game.vehicleImageAlt")}
                   className="success-image img-fluid rounded"
                 />
               </div>
@@ -404,13 +408,13 @@ useEffect(() => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-                <h1 className="game-title">Guess the Car</h1>
+                <h1 className="game-title">{t("game.title")}</h1>
               </div>
               <div className="card-body">
                 <div className="position-relative">
                   <img
                     src={vehiculoDelDia.Imagenes[currentImageIndex]}
-                    alt="Vehículo del día"
+                    alt={t("game.vehicleImageAlt")}
                     className="img-fluid rounded vehicle-image"
                   />
                 </div>
@@ -429,17 +433,17 @@ useEffect(() => {
                   <div className="resultado-container">
                     {step > 1 && (
                       <div className="resultado-adivinado animate">
-                        Marca: <strong>{vehiculoDelDia.Marca}</strong>
+                        {t("game.brand")}: <strong>{vehiculoDelDia.Marca}</strong>
                       </div>
                     )}
                     {step > 2 && (
                       <div className="resultado-adivinado animate">
-                        Modelo: <strong>{vehiculoDelDia.Modelo}</strong>
+                        {t("game.model")}: <strong>{vehiculoDelDia.Modelo}</strong>
                       </div>
                     )}
                     {isCompleted && (
                       <div className="resultado-adivinado animate">
-                        Año: <strong>{vehiculoDelDia.AnoFabricacion}</strong>
+                        {t("game.year")}: <strong>{vehiculoDelDia.AnoFabricacion}</strong>
                       </div>
                     )}
                   </div>
@@ -451,7 +455,7 @@ useEffect(() => {
                       <div className="input-container">
                         <InputField
                           value={marca}
-                          placeholder="Introduce la marca Ej: Bmw, Mercedes..."
+                          placeholder={t("game.marcaPlaceholder")}
                           onChange={(e) => handleInputChange(e, "marca")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
@@ -461,6 +465,7 @@ useEffect(() => {
                         className="btn btn-secondary hint-button"
                         onClick={handleShowHintModal}
                         disabled={errorCount < 5}
+                        title={t("game.hintButtonTitle")}
                       >
                         <FontAwesomeIcon
                           icon={faLightbulb}
@@ -475,7 +480,7 @@ useEffect(() => {
                       <div className="input-container">
                         <InputField
                           value={modelo}
-                          placeholder="Introduce el modelo Ej: SL Class, Mustang..."
+                          placeholder={t("game.modeloPlaceholder")}
                           onChange={(e) => handleInputChange(e, "modelo")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
@@ -485,6 +490,7 @@ useEffect(() => {
                         className="btn btn-secondary hint-button"
                         onClick={handleShowHintModal}
                         disabled={errorCount < 5}
+                        title={t("game.hintButtonTitle")}
                       >
                         <FontAwesomeIcon
                           icon={faLightbulb}
@@ -499,7 +505,7 @@ useEffect(() => {
                       <div className="input-container">
                         <InputField
                           value={anoFabricacion}
-                          placeholder="Introduce el año"
+                          placeholder={t("game.anoPlaceholder")}
                           onChange={(e) => handleInputChange(e, "anoFabricacion")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
@@ -515,7 +521,7 @@ useEffect(() => {
                       onClick={handleGuess}
                       disabled={!marca && !modelo && !anoFabricacion}
                     >
-                      Adivinar
+                      {t("game.guessButton")}
                     </button>
                   </div>
 
@@ -532,7 +538,7 @@ useEffect(() => {
 
                   {isCompleted && (
                     <div className="mt-4 alert alert-success">
-                      ¡Felicidades! Has adivinado correctamente el vehículo del día.
+                      {t("game.congratulations")}
                     </div>
                   )}
                 </div>
@@ -547,7 +553,7 @@ useEffect(() => {
           className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
           onClick={() => setShowPrivacyPolicy(true)}
         >
-          Políticas de Privacidad
+          {t("game.privacyPolicy")}
         </button>
       </div>
 

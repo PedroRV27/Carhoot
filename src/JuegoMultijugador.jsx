@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { AppContext } from "./context/AppContext";
 import { getCoches } from "./services/api";
 import "./JuegoMultijugador.css";
@@ -20,9 +21,9 @@ const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled 
   />
 );
 
-const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound }) => (
+const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound, t }) => (
   <div className={`player-turn-indicator ${isChanging ? 'changing' : ''}`}>
-    <h4>Turno de: <span className="player-name">{players[currentPlayer].name}</span></h4>
+    <h4>{t('multiplayer.turnOf')} <span className="player-name">{players[currentPlayer].name}</span></h4>
     {currentRound === 1 && <small className="turn-reason"></small>}
     {currentRound === 2 && <small className="turn-reason"></small>}
     {currentRound === 3 && <small className="turn-reason"></small>}
@@ -36,7 +37,7 @@ const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound 
   </div>
 );
 
-const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle }) => (
+const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle, t }) => (
   <ul className="list-group intentos-fallidos">
     {attempts
       .filter(intento => intento.playerIndex === currentPlayerIndex)
@@ -54,20 +55,20 @@ const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle }) =
             {intento.ano}
           </span>}
           {intento.marcaCorrecta && !intento.modeloCorrecto && !intento.anoCorrecto && (
-            <div className="feedback-message text-warning">¡Marca correcta! +10pts</div>
+            <div className="feedback-message text-warning">{t('multiplayer.correctBrand')}</div>
           )}
           {intento.modeloCorrecto && (
-            <div className="feedback-message text-warning">¡Modelo correcto! +30pts</div>
+            <div className="feedback-message text-warning">{t('multiplayer.correctModel')}</div>
           )}
           {intento.anoCorrecto && (
-            <div className="feedback-message text-warning">¡Año correcto! +30pts</div>
+            <div className="feedback-message text-warning">{t('multiplayer.correctYear')}</div>
           )}
         </li>
       ))}
   </ul>
 );
 
-const WinnerModal = ({ players, onClose }) => {
+const WinnerModal = ({ players, onClose, t }) => {
   const winnerScore = Math.max(...players.map(p => p.score));
   const winners = players.filter(p => p.score === winnerScore);
   
@@ -76,22 +77,22 @@ const WinnerModal = ({ players, onClose }) => {
       <div className="winner-modal">
         <div className="winner-modal-header">
           <FontAwesomeIcon icon={faTrophy} className="trophy-icon" />
-          <h2>¡Juego Completado!</h2>
+          <h2>{t('multiplayer.gameCompleted')}</h2>
         </div>
         
         <div className="winner-modal-body">
-          <h3>Resultados Finales</h3>
+          <h3>{t('multiplayer.finalResults')}</h3>
           {players.map((player, index) => (
             <div key={index} className={`player-result ${player.score === winnerScore ? 'winner' : ''}`}>
               <span className="player-name">{player.name}</span>
-              <span className="player-score">{player.score} puntos</span>
-              {player.score === winnerScore && <span className="winner-badge">🏆 Ganador</span>}
+              <span className="player-score">{player.score} {t('multiplayer.points')}</span>
+              {player.score === winnerScore && <span className="winner-badge">{t('multiplayer.winner')}</span>}
             </div>
           ))}
         </div>
         
         <button onClick={onClose} className="btn btn-primary winner-modal-button">
-          Volver al Inicio
+          {t('multiplayer.backToHome')}
         </button>
       </div>
     </div>
@@ -100,6 +101,7 @@ const WinnerModal = ({ players, onClose }) => {
 
 const JuegoMultijugador = () => {
   const { theme, language } = useContext(AppContext);
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [vehiculosDelDia, setVehiculosDelDia] = useState([]);
@@ -321,78 +323,77 @@ const JuegoMultijugador = () => {
     return (
       <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
-        <span>Cargando vehículos del día...</span>
+        <span>{t('multiplayer.loadingVehicles')}</span>
       </div>
     );
   }
 
-if (showPlayerNamesModal) {
-  return (
-    <div className={`jm-player-names-modal-wrapper ${containerClass}`}>
-  <div className="jm-road-background"></div>
-  <div className="jm-modal-blur-overlay"></div>
+  if (showPlayerNamesModal) {
+    return (
+      <div className={`jm-player-names-modal-wrapper ${containerClass}`}>
+        <div className="jm-road-background"></div>
+        <div className="jm-modal-blur-overlay"></div>
+        
+        <div className="jm-player-names-modal">
+          <div className="jm-modal-content">
+            <div className="jm-modal-header">
+              <div className="jm-btn-back-container">
+                <button 
+                  onClick={() => navigate("/")} 
+                  className="btn jm-btn-back"
+                >
+                  <FontAwesomeIcon icon={faArrowLeft} /> {t('multiplayer.back')}
+                </button>
+              </div>
+              <div className="jm-modal-title-container">
+                <h2 className="jm-modal-title">
+                  <FontAwesomeIcon icon={faGamepad} className="jm-button-icon" />
+                  {t('multiplayer.playerConfiguration')}
+                </h2>
+              </div>
+            </div>
+            
+            <form onSubmit={handlePlayerNameSubmit} className="jm-modal-form">
+              <div className="jm-form-group">
+                <label htmlFor="player1" className="jm-form-label">
+                  <span className="jm-player-number">{t('multiplayer.player1')}</span>
+                </label>
+                <input
+                  type="text"
+                  id="player1"
+                  className="form-control jm-player-input"
+                  value={tempPlayerNames[0]}
+                  onChange={(e) => handlePlayerNameChange(0, e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              
+              <div className="jm-form-group">
+                <label htmlFor="player2" className="jm-form-label">
+                  <span className="jm-player-number">{t('multiplayer.player2')}</span>
   
-  <div className="jm-player-names-modal">
-    <div className="jm-modal-content">
-      <div className="jm-modal-header">
-      <div className="jm-btn-back-container">
-        <button 
-          onClick={() => navigate("/")} 
-          className="btn jm-btn-back"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} /> Volver
-        </button>
-      </div>
-      <div className="jm-modal-title-container">
-        <h2 className="jm-modal-title">
-          <FontAwesomeIcon icon={faGamepad} className="jm-button-icon" />
-          Configuración de Jugadores
-        </h2>
-      </div>
-    </div>
-      
-      <form onSubmit={handlePlayerNameSubmit} className="jm-modal-form">
-        <div className="jm-form-group">
-          <label htmlFor="player1" className="jm-form-label">
-            <span className="jm-player-number">Jugador 1</span>
-            <span className="jm-input-hint">(Nombre o alias)</span>
-          </label>
-          <input
-            type="text"
-            id="player1"
-            className="form-control jm-player-input"
-            value={tempPlayerNames[0]}
-            onChange={(e) => handlePlayerNameChange(0, e.target.value)}
-            required
-            autoFocus
-          />
+                </label>
+                <input
+                  type="text"
+                  id="player2"
+                  className="form-control jm-player-input"
+                  value={tempPlayerNames[1]}
+                  onChange={(e) => handlePlayerNameChange(1, e.target.value)}
+                  required
+                />
+              </div>
+              
+              <button type="submit" className="btn jm-start-game-button">
+                <FontAwesomeIcon icon={faTrophy} className="jm-button-icon" />
+                {t('multiplayer.startGame')}
+              </button>
+            </form>
+          </div>
         </div>
-        
-        <div className="jm-form-group">
-          <label htmlFor="player2" className="jm-form-label">
-            <span className="jm-player-number">Jugador 2</span>
-            <span className="jm-input-hint">(Nombre o alias)</span>
-          </label>
-          <input
-            type="text"
-            id="player2"
-            className="form-control jm-player-input"
-            value={tempPlayerNames[1]}
-            onChange={(e) => handlePlayerNameChange(1, e.target.value)}
-            required
-          />
-        </div>
-        
-        <button type="submit" className="btn jm-start-game-button">
-          <FontAwesomeIcon icon={faTrophy} className="jm-button-icon" />
-          Comenzar Partida
-        </button>
-      </form>
-    </div>
-  </div>
-</div>
-  );
-}
+      </div>
+    );
+  }
 
   if (showWinnerModal) {
     return (
@@ -401,6 +402,7 @@ if (showPlayerNamesModal) {
         <WinnerModal 
           players={players} 
           onClose={() => navigate("/")} 
+          t={t}
         />
       </div>
     );
@@ -416,8 +418,7 @@ if (showPlayerNamesModal) {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-                <h1 className="game-title">(Ronda {currentVehiculoIndex + 1}/3)</h1>
-                
+                <h1 className="game-title">({t('multiplayer.round')} {currentVehiculoIndex + 1}/3)</h1>
               </div>
               <div className="card-body">
                 <PlayerTurnIndicator 
@@ -425,12 +426,13 @@ if (showPlayerNamesModal) {
                   players={players} 
                   isChanging={isChangingPlayer}
                   currentRound={currentVehiculoIndex + 1}
+                  t={t}
                 />
                 
                 <div className="position-relative">
                   <img
                     src={vehiculoActual.Imagenes[currentImageIndex]}
-                    alt={`Vehículo ${currentVehiculoIndex + 1} del día`}
+                    alt={t('multiplayer.vehicleAlt', { number: currentVehiculoIndex + 1 })}
                     className="img-fluid rounded vehicle-image"
                   />
                 </div>
@@ -450,7 +452,7 @@ if (showPlayerNamesModal) {
                     <div className="input-group mb-2">
                       <InputField
                         value={gameState.marcaAdivinada ? vehiculoActual.Marca : marca}
-                        placeholder={gameState.marcaAdivinada ? "Marca ya adivinada" : "Introduce la marca"}
+                        placeholder={gameState.marcaAdivinada ? t('multiplayer.brandGuessed') : t('multiplayer.brandPlaceholder')}
                         onChange={(e) => !gameState.marcaAdivinada && setMarca(e.target.value)}
                         onKeyDown={handleKeyDown}
                         status={gameState.marcaAdivinada ? "success" : ""}
@@ -462,7 +464,7 @@ if (showPlayerNamesModal) {
                   <div className="input-group mb-2">
                     <InputField
                       value={gameState.modeloAdivinado ? vehiculoActual.Modelo : modelo}
-                      placeholder={gameState.modeloAdivinado ? "Modelo ya adivinado" : "Introduce el modelo"}
+                      placeholder={gameState.modeloAdivinado ? t('multiplayer.modelGuessed') : t('multiplayer.modelPlaceholder')}
                       onChange={(e) => !gameState.modeloAdivinado && setModelo(e.target.value)}
                       onKeyDown={handleKeyDown}
                       status={gameState.modeloAdivinado ? "success" : ""}
@@ -473,7 +475,7 @@ if (showPlayerNamesModal) {
                   <div className="input-group mb-2">
                     <InputField
                       value={gameState.anoAdivinado ? vehiculoActual.AnoFabricacion : anoFabricacion}
-                      placeholder={gameState.anoAdivinado ? "Año ya adivinado" : "Introduce el año"}
+                      placeholder={gameState.anoAdivinado ? t('multiplayer.yearGuessed') : t('multiplayer.yearPlaceholder')}
                       onChange={(e) => !gameState.anoAdivinado && setAnoFabricacion(e.target.value)}
                       onKeyDown={handleKeyDown}
                       status={gameState.anoAdivinado ? "success" : ""}
@@ -491,7 +493,7 @@ if (showPlayerNamesModal) {
                         (gameState.anoAdivinado || !anoFabricacion)
                       }
                     >
-                      Adivinar
+                      {t('game.guessButton')}
                     </button>
                   </div>
 
@@ -500,6 +502,7 @@ if (showPlayerNamesModal) {
                       attempts={intentosFallidos} 
                       currentPlayerIndex={currentPlayer}
                       getFallidoStyle={getAnoFallidoStyle}
+                      t={t}
                     />
                   </div>
                 </div>

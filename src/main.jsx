@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { I18nextProvider } from 'react-i18next'; // Importa I18nextProvider
+import i18n from './i18n'; // Importa la configuración de i18next
 import App from './App.jsx';
 import Juego from './Juego.jsx'; 
 import JuegoMultijugador from './JuegoMultijugador.jsx';
@@ -11,15 +13,18 @@ import JuegoPorIntentos from './JuegoPorIntentos.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AppProvider> {/* Envuelve todo con AppProvider */}
-      <Router>
-        <Routes>
-          <Route path="/" element={<Juego />} /> {/* Ruta principal */}
-          <Route path="/mvm" element={<App />} /> {/* Ruta para el admin */}
-          <Route path="/multijugador" element={<JuegoMultijugador />} />{/* Ruta para el multijugador local */}
-          <Route path="/dificil" element={<JuegoPorIntentos/>} />{/* Ruta para el modo dificil del jeugo limitado por intentos*/}
-        </Routes>
-      </Router>
-    </AppProvider>
+    {/* Envuelve todo con I18nextProvider y pasa i18n */}
+    <I18nextProvider i18n={i18n}>
+      <AppProvider> {/* AppProvider ahora está dentro de I18nextProvider */}
+        <Router>
+          <Routes>
+            <Route path="/" element={<Juego />} />
+            <Route path="/mvm" element={<App />} />
+            <Route path="/multijugador" element={<JuegoMultijugador />} />
+            <Route path="/dificil" element={<JuegoPorIntentos />} />
+          </Routes>
+        </Router>
+      </AppProvider>
+    </I18nextProvider>
   </React.StrictMode>
 );

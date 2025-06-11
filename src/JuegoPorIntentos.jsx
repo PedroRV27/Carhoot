@@ -9,6 +9,7 @@ import { faLightbulb, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from 'react-router-dom';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
+import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { saveGameProgress, loadGameProgress, checkAndResetDailyProgress } from "./utils/gameProgress";
 import { useTranslation } from 'react-i18next';
 
@@ -37,6 +38,13 @@ const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
   </ul>
 );
 
+// Función mejorada para normalizar strings
+const normalizeString = (str) => {
+  return typeof str === 'string' 
+    ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    : String(str).toLowerCase().trim();
+};
+
 const JuegoPorIntentos = () => {
   const { t } = useTranslation();
   const { theme } = useContext(AppContext);
@@ -62,16 +70,38 @@ const JuegoPorIntentos = () => {
   const [totalAttempts, setTotalAttempts] = useState(9);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Función mejorada de validación
+  const validateInput = (input, correctValue) => {
+    if (!input || !correctValue) return false;
+    return normalizeString(input) === normalizeString(correctValue);
+  };
+
+  // Función mejorada para validar año
+  const validateYear = (input, correctValue) => {
+    const userYear = parseInt(input);
+    const correctYear = parseInt(correctValue);
+    return !isNaN(userYear) && userYear === correctYear;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
-      const coches = await getCoches();
-      const hoy = new Date().toISOString().split("T")[0];
-      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-      setVehiculoDelDia(vehiculo);
-      
-      if (vehiculo) {
-        loadProgress();
+      try {
+        setIsLoading(true);
+        const coches = await getCoches();
+        const hoy = new Date().toISOString().split("T")[0];
+        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+        setVehiculoDelDia(vehiculo);
+        
+        if (vehiculo) {
+          loadProgress();
+        }
+      } catch (error) {
+        console.error("Error fetching vehicle:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -104,35 +134,42 @@ const JuegoPorIntentos = () => {
     checkAndResetDailyProgress();
     
     const fetchData = async () => {
-      const coches = await getCoches();
-      const hoy = new Date().toISOString().split("T")[0];
-      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-      setVehiculoDelDia(vehiculo);
-      
-      if (vehiculo) {
-        const savedData = loadGameProgress(vehiculo, 'dificil');
+      try {
+        setIsLoading(true);
+        const coches = await getCoches();
+        const hoy = new Date().toISOString().split("T")[0];
+        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+        setVehiculoDelDia(vehiculo);
         
-        if (savedData) {
-          setStep(savedData.step || 1);
-          setIsCompleted(savedData.isCompleted || false);
-          setIntentosFallidos(savedData.intentosFallidos || {
-            marca: [],
-            modelo: [],
-            anoFabricacion: []
-          });
-          setErrorCount(savedData.errorCount || 0);
-          setMaxImageIndex(savedData.maxImageIndex || 0);
-          setRevealedLetters(savedData.revealedLetters || 0);
-          setCurrentImageIndex(savedData.currentImageIndex || 0);
-          setTotalAttempts(Math.max(0, 9 - (savedData.totalAttemptsUsed || 0)));
+        if (vehiculo) {
+          const savedData = loadGameProgress(vehiculo, 'dificil');
           
-          if (savedData.isCompleted) {
-            setMaxImageIndex(4);
-            setCurrentImageIndex(4);
+          if (savedData) {
+            setStep(savedData.step || 1);
+            setIsCompleted(savedData.isCompleted || false);
+            setIntentosFallidos(savedData.intentosFallidos || {
+              marca: [],
+              modelo: [],
+              anoFabricacion: []
+            });
+            setErrorCount(savedData.errorCount || 0);
+            setMaxImageIndex(savedData.maxImageIndex || 0);
+            setRevealedLetters(savedData.revealedLetters || 0);
+            setCurrentImageIndex(savedData.currentImageIndex || 0);
+            setTotalAttempts(Math.max(0, 9 - (savedData.totalAttemptsUsed || 0)));
+            
+            if (savedData.isCompleted) {
+              setMaxImageIndex(4);
+              setCurrentImageIndex(4);
+            }
+          } else {
+            setTotalAttempts(9);
           }
-        } else {
-          setTotalAttempts(9);
         }
+      } catch (error) {
+        console.error("Error loading game data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -165,7 +202,12 @@ const JuegoPorIntentos = () => {
   };
 
   const getAnoFallidoStyle = (fallido) => {
-    const diferencia = Math.abs(fallido - vehiculoDelDia.AnoFabricacion);
+    const userYear = parseInt(fallido);
+    const correctYear = parseInt(vehiculoDelDia.AnoFabricacion);
+    
+    if (isNaN(userYear)) return "fallido custom-bg-danger";
+    
+    const diferencia = Math.abs(userYear - correctYear);
     if (diferencia <= 2) return "fallido custom-bg-warning-light";
     if (diferencia <= 5) return "fallido custom-bg-orange";
     if (diferencia <= 9) return "fallido custom-bg-orange-dark";
@@ -174,9 +216,6 @@ const JuegoPorIntentos = () => {
 
   const handleGuess = () => {
     if (!vehiculoDelDia || totalAttempts <= 0) return;
-
-    const validateInput = (input, correctValue) =>
-      input.toLowerCase() === correctValue.toLowerCase();
 
     const nuevoIntento = (field, value) => {
       const newIntentosFallidos = {
@@ -267,7 +306,7 @@ const JuegoPorIntentos = () => {
         maxImageIndex: nuevoMaxIndex,
         currentImageIndex: nuevoMaxIndex
       });
-    } else if (step === 3 && anoFabricacion.toString() === vehiculoDelDia.AnoFabricacion.toString()) {
+    } else if (step === 3 && validateYear(anoFabricacion, vehiculoDelDia.AnoFabricacion)) {
       setInputStatus("success");
       setTimeout(() => {
         setIsCompleted(true);
@@ -347,6 +386,15 @@ const JuegoPorIntentos = () => {
 
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
+  if (isLoading) {
+    return (
+      <div className={`spinner-container ${containerClass}`}>
+        <div className="spinner"></div>
+        <span>{t('game.loading')}</span>
+      </div>
+    );
+  }
+
   if (!vehiculoDelDia) {
     return (
       <div className={`spinner-container ${containerClass}`}>
@@ -372,10 +420,26 @@ const JuegoPorIntentos = () => {
                   alt={t('game.vehicleImageAlt')}
                   className="success-image img-fluid rounded"
                 />
+                 <p className="come-back-tomorrow">{t("game.comeBackTomorrow")}</p>
               </div>
             </div>
           </div>
         </div>
+        
+        <div className="text-center mt-4">
+          <button
+            className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
+            onClick={() => setShowPrivacyPolicy(true)}
+          >
+            {t("game.privacyPolicy")}
+          </button>
+        </div>
+
+        <PrivacyPolicyModal
+          show={showPrivacyPolicy}
+          onHide={() => setShowPrivacyPolicy(false)}
+          theme={theme}
+        />
       </div>
     );
   }
@@ -531,7 +595,21 @@ const JuegoPorIntentos = () => {
         </div>
       </div>
 
-      {/* Game Over Modal */}
+      <div className="text-center mt-4">
+        <button
+          className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
+          onClick={() => setShowPrivacyPolicy(true)}
+        >
+          {t("game.privacyPolicy")}
+        </button>
+      </div>
+
+      <PrivacyPolicyModal
+        show={showPrivacyPolicy}
+        onHide={() => setShowPrivacyPolicy(false)}
+        theme={theme}
+      />
+
       <Modal 
         show={showGameOverModal} 
         onHide={() => setShowGameOverModal(false)}
@@ -606,7 +684,6 @@ const JuegoPorIntentos = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Confirmation Modal */}
       <Modal 
         show={showConfirmationModal} 
         onHide={() => setShowConfirmationModal(false)}
@@ -667,7 +744,6 @@ const JuegoPorIntentos = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Result Modal */}
       <Modal 
         show={showResultModal} 
         onHide={() => setShowResultModal(false)}

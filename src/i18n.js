@@ -45,7 +45,8 @@ const resources = {
         congratulations: "Congratulations! You have correctly guessed the vehicle of the day.",
         
         // Alt text para imágenes
-        vehicleImageAlt: "Vehicle of the day"
+        vehicleImageAlt: "Vehicle of the day",
+        comeBackTomorrow: "Daily challenge completed! Come back tomorrow and keep playing"
       },
       gameOverModal: {
         title: "Out of attempts!",
@@ -219,7 +220,8 @@ const resources = {
         congratulations: "¡Felicidades! Has adivinado correctamente el vehículo del día.",
         
         // Alt text para imágenes
-        vehicleImageAlt: "Vehículo del día"
+        vehicleImageAlt: "Vehículo del día",
+        comeBackTomorrow: "¡Desafío diario completado! Regresa mañana y sigue jugando"
       },
       gameOverModal: {
         title: "¡Se acabaron los intentos!",

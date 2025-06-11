@@ -335,6 +335,9 @@ input.error {
   border: none;
   cursor: pointer;
   border: 1px solid #444444;
+  position: relative;
+  padding: 8px; 
+ 
 }
 
 .light-theme .dot.active {
@@ -483,6 +486,16 @@ input.error {
   border: none;
   cursor: pointer;
   border: 1px solid #868686;
+  padding: 8px;
+  position:relative;
+}
+.dot::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
 }
 
 .dark-theme .dot.active {
@@ -732,10 +745,13 @@ input.error {
   color: inherit; /* Heredar el color del texto del tema */
   background: none; /* Sin fondo */
   border: none; /* Sin borde */
-  padding: 0; /* Sin padding */
+  padding: 0px; /* Sin padding */
   cursor: pointer; /* Cambiar el cursor al pasar el mouse */
   transition: color 0.3s ease; /* Transición suave para el color */
   text-decoration: none; /* Sin subrayado */
+  position: relative; /* Necesario para usar top/bottom */
+  top: -20px;
+  
 }
 
 /* Estilos para el tema claro */
@@ -870,5 +886,40 @@ input.error {
 .light-theme .no-vehicle-submessage {
   color: var(--light-secondary-text-color);
 }
+/* Media query específica para móviles */
+@media (max-width: 768px) {
+  .vehicle-image {
+    height: 180px !important; /* Puedes ajustar esta altura según necesites */
+    max-width: 100% !important;
+  }
+  
+  .position-relative {
+    width: 100% !important; /* Asegura que el contenedor no se salga */
+    margin: 0 auto !important;
+  }
+}
 
-
+.dark-theme .come-back-tomorrow {
+  background: linear-gradient(90deg, #000000, #1d1d1d);
+  border: none;
+  color: gold;
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 12px 24px;
+  border-radius: 1rem;
+  display: inline-block;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+}
+.light-theme .come-back-tomorrow {
+  background: linear-gradient(90deg, #fcfcfc, #cfcfcf);
+  border: none;
+  color: rgb(0, 0, 0);
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 12px 24px;
+  border-radius: 1rem;
+  display: inline-block;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+}

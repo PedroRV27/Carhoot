@@ -8,6 +8,14 @@ import { Link, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb, faHome, faArrowLeft, faTrophy, faGamepad } from "@fortawesome/free-solid-svg-icons";
+import PrivacyPolicyModal from "./PrivacyPolicyModal";
+
+// Función para normalizar strings
+const normalizeString = (str) => {
+  return typeof str === 'string' 
+    ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    : String(str).toLowerCase().trim();
+};
 
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
   <input
@@ -24,49 +32,88 @@ const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled 
 const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound, t }) => (
   <div className={`player-turn-indicator ${isChanging ? 'changing' : ''}`}>
     <h4>{t('multiplayer.turnOf')} <span className="player-name">{players[currentPlayer].name}</span></h4>
-    {currentRound === 1 && <small className="turn-reason"></small>}
-    {currentRound === 2 && <small className="turn-reason"></small>}
-    {currentRound === 3 && <small className="turn-reason"></small>}
     <div className="player-scores">
       {players.map((player, index) => (
         <div key={index} className={`player-score ${index === currentPlayer ? 'active' : ''}`}>
-          {player.name}: {player.score} pts
+          {player.name}: {player.score} {t('multiplayer.points')}
         </div>
       ))}
     </div>
   </div>
 );
 
-const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle, t }) => (
-  <ul className="list-group intentos-fallidos">
-    {attempts
-      .filter(intento => intento.playerIndex === currentPlayerIndex)
-      .slice()
-      .reverse()
-      .map((intento, idx) => (
-        <li key={idx} className="list-group-item">
-          {intento.marca && <span className={intento.marcaCorrecta ? "text-success fw-bold" : ""}>
-            {intento.marca}
-          </span>}
-          {intento.modelo && <span className={intento.modeloCorrecto ? "text-success fw-bold" : !intento.modeloCorrecto && intento.modelo ? "text-danger" : ""}>
-            {intento.modelo}
-          </span>}
-          {intento.ano && <span className={getFallidoStyle(intento)}>
-            {intento.ano}
-          </span>}
-          {intento.marcaCorrecta && !intento.modeloCorrecto && !intento.anoCorrecto && (
-            <div className="feedback-message text-warning">{t('multiplayer.correctBrand')}</div>
-          )}
-          {intento.modeloCorrecto && (
-            <div className="feedback-message text-warning">{t('multiplayer.correctModel')}</div>
-          )}
-          {intento.anoCorrecto && (
-            <div className="feedback-message text-warning">{t('multiplayer.correctYear')}</div>
-          )}
-        </li>
-      ))}
-  </ul>
-);
+const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle, t, vehiculoActual }) => {
+  // Función mejorada para verificar coincidencias parciales
+  const getPartialMatchStyle = (inputText, correctText) => {
+    if (!inputText || !correctText) return "";
+    
+    const input = normalizeString(inputText);
+    const correct = normalizeString(correctText);
+    
+    // Coincidencia exacta (ya manejada por el componente padre)
+    if (input === correct) return "";
+    
+    // Verificar si hay palabras en común
+    const inputWords = input.split(/\s+/);
+    const correctWords = correct.split(/\s+/);
+    
+    const hasCommonWords = inputWords.some(inputWord => 
+      correctWords.some(correctWord => 
+        inputWord.length > 2 && correctWord.includes(inputWord) || 
+        correctWord.length > 2 && inputWord.includes(correctWord)
+      )
+    );
+    
+    return hasCommonWords ? "text-warning" : "";
+  };
+
+  return (
+    <div className="intentos-fallidos-container">
+      <ul className="list-group intentos-fallidos">
+        {attempts
+          .filter(intento => intento.playerIndex === currentPlayerIndex)
+          .slice()
+          .reverse()
+          .map((intento, idx) => (
+            <li key={idx} className="list-group-item">
+              {intento.marca && (
+                <span className={
+                  intento.marcaCorrecta 
+                    ? "text-success fw-bold" 
+                    : getPartialMatchStyle(intento.marca, vehiculoActual?.Marca)
+                }>
+                  {intento.marca}
+                </span>
+              )}
+              {intento.modelo && (
+                <span className={
+                  intento.modeloCorrecto 
+                    ? "text-success fw-bold" 
+                    : getPartialMatchStyle(intento.modelo, vehiculoActual?.Modelo)
+                }>
+                  {intento.modelo}
+                </span>
+              )}
+              {intento.ano && (
+                <span className={getFallidoStyle(intento)}>
+                  {intento.ano}
+                </span>
+              )}
+              {intento.marcaCorrecta && !intento.modeloCorrecto && !intento.anoCorrecto && (
+                <div className="feedback-message text-success">{t('multiplayer.correctBrand')}</div>
+              )}
+              {intento.modeloCorrecto && (
+                <div className="feedback-message text-success">{t('multiplayer.correctModel')}</div>
+              )}
+              {intento.anoCorrecto && (
+                <div className="feedback-message text-success">{t('multiplayer.correctYear')}</div>
+              )}
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+};
 
 const WinnerModal = ({ players, onClose, t }) => {
   const winnerScore = Math.max(...players.map(p => p.score));
@@ -77,7 +124,7 @@ const WinnerModal = ({ players, onClose, t }) => {
       <div className="winner-modal">
         <div className="winner-modal-header">
           <FontAwesomeIcon icon={faTrophy} className="trophy-icon" />
-          <h2 class="JuegoCompletado">{t('multiplayer.gameCompleted')}</h2>
+          <h2 className="JuegoCompletado">{t('multiplayer.gameCompleted')}</h2>
         </div>
         
         <div className="winner-modal-body">
@@ -116,6 +163,7 @@ const JuegoMultijugador = () => {
   const [maxImageIndex, setMaxImageIndex] = useState(0);
   const [showPlayerNamesModal, setShowPlayerNamesModal] = useState(true);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [players, setPlayers] = useState([
     { name: "", score: 0 },
     { name: "", score: 0 }
@@ -128,9 +176,48 @@ const JuegoMultijugador = () => {
     modeloAdivinado: false,
     anoAdivinado: false
   });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Función mejorada de validación
+  const validateInput = (input, correctValue) => {
+    if (!input || !correctValue) return false;
+    return normalizeString(input) === normalizeString(correctValue);
+  };
+
+  // Función mejorada para validar año
+  const validateYear = (input, correctValue) => {
+    const userYear = parseInt(input);
+    const correctYear = parseInt(correctValue);
+    return !isNaN(userYear) && !isNaN(correctYear) && userYear === correctYear;
+  };
 
   useEffect(() => {
-    fetchVehiculosDelDia();
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const coches = await getCoches();
+        
+        const vehiculosAleatorios = [];
+        const indicesUsados = new Set();
+        const cantidad = Math.min(3, coches.length);
+        
+        while (vehiculosAleatorios.length < cantidad) {
+          const indiceAleatorio = Math.floor(Math.random() * coches.length);
+          if (!indicesUsados.has(indiceAleatorio)) {
+            indicesUsados.add(indiceAleatorio);
+            vehiculosAleatorios.push(coches[indiceAleatorio]);
+          }
+        }
+        
+        setVehiculosDelDia(vehiculosAleatorios);
+      } catch (error) {
+        console.error("Error al obtener los coches:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -138,12 +225,13 @@ const JuegoMultijugador = () => {
       ? gameState.marcaAdivinada && gameState.modeloAdivinado && gameState.anoAdivinado
       : gameState.modeloAdivinado && gameState.anoAdivinado;
 
-    if (allFieldsGuessed) {
+    if (allFieldsGuessed && vehiculosDelDia.length > 0) {
       const timer = setTimeout(() => {
         if (currentVehiculoIndex < vehiculosDelDia.length - 1) {
           const nextVehiculoIndex = currentVehiculoIndex + 1;
           setCurrentVehiculoIndex(nextVehiculoIndex);
 
+          // Determinar el próximo jugador basado en el puntaje
           if (nextVehiculoIndex === 1) {
             setCurrentPlayer(1);
           } else if (nextVehiculoIndex === 2) {
@@ -174,40 +262,18 @@ const JuegoMultijugador = () => {
         } else {
           setShowWinnerModal(true);
         }
-      }, 1000);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
-  }, [gameState, currentVehiculoIndex, vehiculosDelDia.length]);
-
-  const fetchVehiculosDelDia = async () => {
-    try {
-      const coches = await getCoches();
-      
-      const vehiculosAleatorios = [];
-      const indicesUsados = new Set();
-      const cantidad = Math.min(3, coches.length);
-      
-      while (vehiculosAleatorios.length < cantidad) {
-        const indiceAleatorio = Math.floor(Math.random() * coches.length);
-        if (!indicesUsados.has(indiceAleatorio)) {
-          indicesUsados.add(indiceAleatorio);
-          vehiculosAleatorios.push(coches[indiceAleatorio]);
-        }
-      }
-      
-      setVehiculosDelDia(vehiculosAleatorios);
-    } catch (error) {
-      console.error("Error al obtener los coches:", error);
-    }
-  };
+  }, [gameState, currentVehiculoIndex, vehiculosDelDia.length, players]);
 
   const handlePlayerNameSubmit = (e) => {
     e.preventDefault();
     if (tempPlayerNames[0].trim() && tempPlayerNames[1].trim()) {
       setPlayers([
-        { name: tempPlayerNames[0], score: 0 },
-        { name: tempPlayerNames[1], score: 0 }
+        { name: tempPlayerNames[0].trim(), score: 0 },
+        { name: tempPlayerNames[1].trim(), score: 0 }
       ]);
       setCurrentPlayer(0);
       setShowPlayerNamesModal(false);
@@ -223,7 +289,9 @@ const JuegoMultijugador = () => {
   const getAnoFallidoStyle = (fallido) => {
     if (fallido.anoCorrecto) return "text-success fw-bold";
     
-    const diferencia = Math.abs(fallido.ano - fallido.anoCorrectoValor);
+    const diferencia = Math.abs(parseInt(fallido.ano) - parseInt(fallido.anoCorrectoValor));
+    if (isNaN(diferencia)) return "fallido custom-bg-danger";
+    
     if (diferencia <= 2) return "fallido custom-bg-warning-light";
     if (diferencia <= 5) return "fallido custom-bg-orange";
     if (diferencia <= 9) return "fallido custom-bg-orange-dark";
@@ -251,17 +319,20 @@ const JuegoMultijugador = () => {
   };
 
   const handleGuess = () => {
-    if (!vehiculosDelDia[currentVehiculoIndex]) return;
+    if (!vehiculosDelDia[currentVehiculoIndex] || isChangingPlayer) return;
 
     const vehiculoActual = vehiculosDelDia[currentVehiculoIndex];
-    const marcaCorrecta = marca.toLowerCase() === vehiculoActual.Marca.toLowerCase();
-    const modeloCorrecto = modelo.toLowerCase() === vehiculoActual.Modelo.toLowerCase();
-    const anoCorrecto = anoFabricacion.toString() === vehiculoActual.AnoFabricacion.toString();
+    const marcaCorrecta = currentVehiculoIndex !== 2 
+      ? validateInput(marca, vehiculoActual.Marca)
+      : true; // En la ronda 3, la marca ya está adivinada
+    
+    const modeloCorrecto = validateInput(modelo, vehiculoActual.Modelo);
+    const anoCorrecto = validateYear(anoFabricacion, vehiculoActual.AnoFabricacion);
     
     const updatedPlayers = [...players];
     let newGameState = {...gameState};
 
-    if (marcaCorrecta && !newGameState.marcaAdivinada) {
+    if (marcaCorrecta && !newGameState.marcaAdivinada && currentVehiculoIndex !== 2) {
       updatedPlayers[currentPlayer].score += 10;
       newGameState.marcaAdivinada = true;
     }
@@ -312,14 +383,28 @@ const JuegoMultijugador = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !isGuessButtonDisabled()) {
       handleGuess();
     }
   };
 
+  const isGuessButtonDisabled = () => {
+    if (isChangingPlayer) return true;
+    
+    const needsBrand = currentVehiculoIndex !== 2 && !gameState.marcaAdivinada;
+    const needsModel = !gameState.modeloAdivinado;
+    const needsYear = !gameState.anoAdivinado;
+    
+    if (needsBrand && !marca.trim()) return true;
+    if (needsModel && !modelo.trim()) return true;
+    if (needsYear && !anoFabricacion.trim()) return true;
+    
+    return false;
+  };
+
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
-  if (!vehiculosDelDia.length) {
+  if (isLoading) {
     return (
       <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
@@ -365,6 +450,8 @@ const JuegoMultijugador = () => {
                   value={tempPlayerNames[0]}
                   onChange={(e) => handlePlayerNameChange(0, e.target.value)}
                   required
+                  minLength="2"
+                  maxLength="20"
                   autoFocus
                 />
               </div>
@@ -372,7 +459,6 @@ const JuegoMultijugador = () => {
               <div className="jm-form-group">
                 <label htmlFor="player2" className="jm-form-label">
                   <span className="jm-player-number">{t('multiplayer.player2')}</span>
-  
                 </label>
                 <input
                   type="text"
@@ -381,6 +467,8 @@ const JuegoMultijugador = () => {
                   value={tempPlayerNames[1]}
                   onChange={(e) => handlePlayerNameChange(1, e.target.value)}
                   required
+                  minLength="2"
+                  maxLength="20"
                 />
               </div>
               
@@ -418,7 +506,9 @@ const JuegoMultijugador = () => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-                <h1 className="game-title">({t('multiplayer.round')} {currentVehiculoIndex + 1}/3)</h1>
+                <h1 className="game-title">
+                  {t('multiplayer.round')} {currentVehiculoIndex + 1}/3
+                </h1>
               </div>
               <div className="card-body">
                 <PlayerTurnIndicator 
@@ -443,6 +533,7 @@ const JuegoMultijugador = () => {
                       key={index}
                       className={`dot ${index === currentImageIndex ? "active" : ""}`}
                       onClick={() => setCurrentImageIndex(index)}
+                      disabled={isChangingPlayer}
                     ></button>
                   ))}
                 </div>
@@ -456,7 +547,7 @@ const JuegoMultijugador = () => {
                         onChange={(e) => !gameState.marcaAdivinada && setMarca(e.target.value)}
                         onKeyDown={handleKeyDown}
                         status={gameState.marcaAdivinada ? "success" : ""}
-                        disabled={gameState.marcaAdivinada}
+                        disabled={gameState.marcaAdivinada || isChangingPlayer}
                       />
                     </div>
                   )}
@@ -468,7 +559,7 @@ const JuegoMultijugador = () => {
                       onChange={(e) => !gameState.modeloAdivinado && setModelo(e.target.value)}
                       onKeyDown={handleKeyDown}
                       status={gameState.modeloAdivinado ? "success" : ""}
-                      disabled={gameState.modeloAdivinado}
+                      disabled={gameState.modeloAdivinado || isChangingPlayer}
                     />
                   </div>
                   
@@ -479,7 +570,7 @@ const JuegoMultijugador = () => {
                       onChange={(e) => !gameState.anoAdivinado && setAnoFabricacion(e.target.value)}
                       onKeyDown={handleKeyDown}
                       status={gameState.anoAdivinado ? "success" : ""}
-                      disabled={gameState.anoAdivinado}
+                      disabled={gameState.anoAdivinado || isChangingPlayer}
                     />
                   </div>
 
@@ -487,11 +578,7 @@ const JuegoMultijugador = () => {
                     <button
                       className="btn btn-primary flex-fill mt-2 guess-button"
                       onClick={handleGuess}
-                      disabled={
-                        (currentVehiculoIndex !== 2 && (gameState.marcaAdivinada || !marca)) ||
-                        (gameState.modeloAdivinado || !modelo) ||
-                        (gameState.anoAdivinado || !anoFabricacion)
-                      }
+                      disabled={isGuessButtonDisabled()}
                     >
                       {t('game.guessButton')}
                     </button>
@@ -503,6 +590,7 @@ const JuegoMultijugador = () => {
                       currentPlayerIndex={currentPlayer}
                       getFallidoStyle={getAnoFallidoStyle}
                       t={t}
+                      vehiculoActual={vehiculoActual}
                     />
                   </div>
                 </div>
@@ -511,6 +599,50 @@ const JuegoMultijugador = () => {
           </div>
         </div>
       </div>
+
+      <div className="text-center mt-4">
+        <button
+          className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
+          onClick={() => setShowPrivacyPolicy(true)}
+        >
+          {t("game.privacyPolicy")}
+        </button>
+      </div>
+
+      <PrivacyPolicyModal
+        show={showPrivacyPolicy}
+        onHide={() => setShowPrivacyPolicy(false)}
+        theme={theme}
+      />
+      <style jsx>{`
+        .intentos-fallidos-container {
+          max-height: 300px;
+          overflow-y: auto;
+          border: 1px solid #dee2e6;
+          border-radius: 0.375rem;
+          padding: 0.5rem;
+        }
+        
+        .intentos-fallidos {
+          margin-bottom: 0;
+        }
+        
+        .intentos-fallidos .list-group-item {
+          padding: 0.5rem;
+          margin-bottom: 0.25rem;
+          border-radius: 0.25rem;
+        }
+        
+        .intentos-fallidos .list-group-item:last-child {
+          margin-bottom: 0;
+        }
+        
+        .intentos-fallidos .list-group-item span {
+          margin-right: 0.5rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 0.25rem;
+        }
+      `}</style>
     </div>
   );
 };

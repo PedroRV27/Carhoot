@@ -1,14 +1,14 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "./context/AppContext";
 import { getCoches } from "./services/api";
-import { useTranslation } from "react-i18next"; // Agregar importación
+import { useTranslation } from "react-i18next";
 import "./Juego.css";
 import Header from "./Header";
 import "bootstrap/dist/css/bootstrap.min.css";
 import HintModal from "./HintModal";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLightbulb,faUsers,faGamepad } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb, faUsers, faGamepad } from "@fortawesome/free-solid-svg-icons";
 import { Link } from 'react-router-dom';
 import Cookies from "js-cookie";
 import { saveGameProgress, loadGameProgress, checkAndResetDailyProgress } from "./utils/gameProgress";
@@ -38,9 +38,15 @@ const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
   </ul>
 );
 
+const normalizeString = (str) => {
+  return typeof str === 'string' 
+    ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    : String(str).toLowerCase().trim();
+};
+
 const Juego = () => {
   const { theme, language } = useContext(AppContext);
-  const { t } = useTranslation(); // Agregar hook de traducción
+  const { t } = useTranslation();
 
   const [vehiculoDelDia, setVehiculoDelDia] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -61,11 +67,24 @@ const Juego = () => {
   const [revealedLetters, setRevealedLetters] = useState(0);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [noVehicleToday, setNoVehicleToday] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const validateInput = (input, correctValue) => {
+    if (!input || !correctValue) return false;
+    return normalizeString(input) === normalizeString(correctValue);
+  };
+
+  const validateYear = (input, correctValue) => {
+    const userYear = parseInt(input);
+    const correctYear = parseInt(correctValue);
+    return !isNaN(userYear) && userYear === correctYear;
+  };
 
   useEffect(() => {
     checkAndResetDailyProgress();
     const fetchData = async () => {
       try {
+        setIsLoading(true);
         const coches = await getCoches();
         const hoy = new Date().toISOString().split("T")[0];
         const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
@@ -77,8 +96,9 @@ const Juego = () => {
           setNoVehicleToday(true);
         }
       } catch (error) {
-        console.error("Error fetching vehicles:", error);
         setNoVehicleToday(true);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -91,7 +111,6 @@ const Juego = () => {
     }
   }, [vehiculoDelDia]);
 
-  // Efecto para guardar progreso
   useEffect(() => {
     if (!vehiculoDelDia) return;
 
@@ -108,48 +127,6 @@ const Juego = () => {
     saveGameProgress(vehiculoDelDia, progressData);
   }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, vehiculoDelDia]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const coches = await getCoches();
-      const hoy = new Date().toISOString().split("T")[0];
-      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-      setVehiculoDelDia(vehiculo);
-      
-      if (vehiculo) {
-        // Cargar progreso existente (compatible con ambos modos)
-        const savedData = loadGameProgress(vehiculo);
-        if (savedData) {
-          setStep(savedData.step || 1);
-          setIsCompleted(savedData.isCompleted || false);
-          setIntentosFallidos(savedData.intentosFallidos || {
-            marca: [],
-            modelo: [],
-            anoFabricacion: []
-          });
-          setErrorCount(savedData.errorCount || 0);
-          setMaxImageIndex(savedData.maxImageIndex || 0);
-          setRevealedLetters(savedData.revealedLetters || 0);
-          setCurrentImageIndex(savedData.currentImageIndex || 0);
-          
-          // Si el juego estaba completado, mostrar la última imagen
-          if (savedData.isCompleted) {
-            setMaxImageIndex(4);
-            setCurrentImageIndex(4);
-          }
-        }
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const fetchVehiculoDelDia = async () => {
-    const coches = await getCoches();
-    const hoy = new Date().toISOString().split("T")[0];
-    const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-    setVehiculoDelDia(vehiculo);
-  };
-
   const loadProgress = () => {
     const savedData = loadGameProgress(vehiculoDelDia);
     if (savedData) {
@@ -164,6 +141,11 @@ const Juego = () => {
       setMaxImageIndex(savedData.maxImageIndex || 0);
       setRevealedLetters(savedData.revealedLetters || 0);
       setCurrentImageIndex(savedData.currentImageIndex || 0);
+      
+      if (savedData.isCompleted) {
+        setMaxImageIndex(4);
+        setCurrentImageIndex(4);
+      }
     }
   };
 
@@ -175,7 +157,12 @@ const Juego = () => {
   };
 
   const getAnoFallidoStyle = (fallido) => {
-    const diferencia = Math.abs(fallido - vehiculoDelDia.AnoFabricacion);
+    const userYear = parseInt(fallido);
+    const correctYear = parseInt(vehiculoDelDia.AnoFabricacion);
+    
+    if (isNaN(userYear)) return "fallido custom-bg-danger";
+    
+    const diferencia = Math.abs(userYear - correctYear);
     if (diferencia <= 2) return "fallido custom-bg-warning-light";
     if (diferencia <= 5) return "fallido custom-bg-orange";
     if (diferencia <= 9) return "fallido custom-bg-orange-dark";
@@ -183,10 +170,7 @@ const Juego = () => {
   };
 
   const handleGuess = () => {
-    if (!vehiculoDelDia) return;
-
-    const validateInput = (input, correctValue) =>
-      input.toLowerCase() === correctValue.toLowerCase();
+    if (!vehiculoDelDia || !vehiculoDelDia.Marca) return;
 
     const nuevoIntento = (field, value) => {
       const newIntentosFallidos = {
@@ -205,10 +189,9 @@ const Juego = () => {
       return { newIntentosFallidos, newErrorCount, nuevoMaxIndex };
     };
 
-    // Función para guardar progreso normalizado
     const saveProgress = (newState = {}) => {
       saveGameProgress(vehiculoDelDia, {
-        modo: 'normal', // Identificar que es el modo normal
+        modo: 'normal',
         step: newState.step !== undefined ? newState.step : step,
         isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
         intentosFallidos: newState.intentosFallidos || intentosFallidos,
@@ -272,7 +255,7 @@ const Juego = () => {
         maxImageIndex: nuevoMaxIndex,
         currentImageIndex: nuevoMaxIndex
       });
-    } else if (step === 3 && anoFabricacion.toString() === vehiculoDelDia.AnoFabricacion.toString()) {
+    } else if (step === 3 && validateYear(anoFabricacion, vehiculoDelDia.AnoFabricacion)) {
       setInputStatus("success");
       setTimeout(() => {
         setIsCompleted(true);
@@ -340,6 +323,15 @@ const Juego = () => {
 
   const containerClass = theme === "dark" ? "dark-theme" : "light-theme";
 
+  if (isLoading) {
+    return (
+      <div className={`spinner-container ${containerClass}`}>
+        <div className="spinner"></div>
+        <span>{t("game.loading")}</span>
+      </div>
+    );
+  }
+
   if (noVehicleToday) {
     return (
       <div className={containerClass}>
@@ -392,6 +384,7 @@ const Juego = () => {
                   alt={t("game.vehicleImageAlt")}
                   className="success-image img-fluid rounded"
                 />
+                <p className="come-back-tomorrow">{t("game.comeBackTomorrow")}</p>
               </div>
             </div>
           </div>

@@ -131,50 +131,57 @@ const JuegoPorIntentos = () => {
   }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, totalAttempts, vehiculoDelDia]);
 
   useEffect(() => {
-    checkAndResetDailyProgress();
-    
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const coches = await getCoches();
-        const hoy = new Date().toISOString().split("T")[0];
-        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-        setVehiculoDelDia(vehiculo);
+  checkAndResetDailyProgress();
+  
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const coches = await getCoches();
+      const hoy = new Date().toISOString().split("T")[0];
+      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+      setVehiculoDelDia(vehiculo);
+      
+      if (vehiculo) {
+        const savedData = loadGameProgress(vehiculo, 'dificil');
         
-        if (vehiculo) {
-          const savedData = loadGameProgress(vehiculo, 'dificil');
+        if (savedData) {
+          setStep(savedData.step || 1);
+          setIsCompleted(savedData.isCompleted || false);
+          setIntentosFallidos(savedData.intentosFallidos || {
+            marca: [],
+            modelo: [],
+            anoFabricacion: []
+          });
+          setErrorCount(savedData.errorCount || 0);
+          setMaxImageIndex(savedData.maxImageIndex || 0);
+          setRevealedLetters(savedData.revealedLetters || 0);
+          setCurrentImageIndex(savedData.currentImageIndex || 0);
           
-          if (savedData) {
-            setStep(savedData.step || 1);
-            setIsCompleted(savedData.isCompleted || false);
-            setIntentosFallidos(savedData.intentosFallidos || {
-              marca: [],
-              modelo: [],
-              anoFabricacion: []
-            });
-            setErrorCount(savedData.errorCount || 0);
-            setMaxImageIndex(savedData.maxImageIndex || 0);
-            setRevealedLetters(savedData.revealedLetters || 0);
-            setCurrentImageIndex(savedData.currentImageIndex || 0);
-            setTotalAttempts(Math.max(0, 9 - (savedData.totalAttemptsUsed || 0)));
-            
-            if (savedData.isCompleted) {
-              setMaxImageIndex(4);
-              setCurrentImageIndex(4);
-            }
-          } else {
-            setTotalAttempts(9);
+          // Calcular intentos basado en el total usado (compartido entre modos)
+          const attemptsUsed = savedData.totalAttemptsUsed || 0;
+          setTotalAttempts(Math.max(0, 9 - attemptsUsed));
+          
+          if (savedData.isCompleted) {
+            setMaxImageIndex(4);
+            setCurrentImageIndex(4);
           }
+        } else {
+          // Verificar si hay intentos usados en el otro modo
+          const totalAttemptsKey = `totalAttemptsUsed_${hoy}`;
+          const attemptsUsed = parseInt(localStorage.getItem(totalAttemptsKey)) || 
+                             parseInt(Cookies.get(totalAttemptsKey)) || 0;
+          setTotalAttempts(Math.max(0, 9 - attemptsUsed));
         }
-      } catch (error) {
-        console.error("Error loading game data:", error);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Error loading game data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchData();
-  }, []);
+  fetchData();
+}, []);
 
   const loadProgress = () => {
     const savedData = loadGameProgress(vehiculoDelDia);
@@ -215,42 +222,42 @@ const JuegoPorIntentos = () => {
   };
 
   const handleGuess = () => {
-    if (!vehiculoDelDia || totalAttempts <= 0) return;
+  if (!vehiculoDelDia || totalAttempts <= 0) return;
 
-    const nuevoIntento = (field, value) => {
-      const newIntentosFallidos = {
-        ...intentosFallidos,
-        [field]: [...intentosFallidos[field], value]
-      };
-      const newErrorCount = errorCount + 1;
-      const newTotalAttempts = totalAttempts - 1;
-      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
-
-      setIntentosFallidos(newIntentosFallidos);
-      setErrorCount(newErrorCount);
-      setTotalAttempts(newTotalAttempts);
-      setMaxImageIndex(nuevoMaxIndex);
-      setCurrentImageIndex(nuevoMaxIndex);
-
-      return { newIntentosFallidos, newErrorCount, newTotalAttempts, nuevoMaxIndex };
+  const nuevoIntento = (field, value) => {
+    const newIntentosFallidos = {
+      ...intentosFallidos,
+      [field]: [...intentosFallidos[field], value]
     };
+    const newErrorCount = errorCount + 1;
+    const newTotalAttempts = totalAttempts - 1;
+    const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
 
-    const saveProgress = (newState = {}) => {
-      const attemptsUsed = 9 - (newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts);
-      
-      saveGameProgress(vehiculoDelDia, {
-        modo: 'dificil',
-        step: newState.step !== undefined ? newState.step : step,
-        isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
-        intentosFallidos: newState.intentosFallidos || intentosFallidos,
-        errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
-        maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
-        revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
-        currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
-        totalAttempts: newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts,
-        totalAttemptsUsed: attemptsUsed
-      });
-    };
+    setIntentosFallidos(newIntentosFallidos);
+    setErrorCount(newErrorCount);
+    setTotalAttempts(newTotalAttempts);
+    setMaxImageIndex(nuevoMaxIndex);
+    setCurrentImageIndex(nuevoMaxIndex);
+
+    return { newIntentosFallidos, newErrorCount, newTotalAttempts, nuevoMaxIndex };
+  };
+
+  const saveProgress = (newState = {}) => {
+    const attemptsUsed = 9 - (newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts);
+    
+    saveGameProgress(vehiculoDelDia, {
+      modo: 'dificil',
+      step: newState.step !== undefined ? newState.step : step,
+      isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
+      intentosFallidos: newState.intentosFallidos || intentosFallidos,
+      errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
+      maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
+      revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
+      currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
+      totalAttempts: newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts,
+      totalAttemptsUsed: attemptsUsed
+    });
+  };
 
     if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
       setInputStatus("success");

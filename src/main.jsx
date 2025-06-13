@@ -10,6 +10,22 @@ import { AppProvider } from './context/AppContext';
 import 'bootstrap/dist/css/bootstrap.min.css'; 
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import JuegoPorIntentos from './JuegoPorIntentos.jsx';
+import DOMPurify from 'dompurify';
+
+// Configuración de máxima seguridad para DOMPurify
+DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
+  if (data.attrName === 'style') {
+    return false; // Elimina todos los estilos inline
+  }
+});
+
+// Configuración adicional recomendada para DOMPurify
+DOMPurify.setConfig({
+  ADD_ATTR: ['target'], // Solo permite atributos target (para enlaces seguros)
+  FORBID_TAGS: ['style', 'script', 'iframe', 'frame', 'object', 'embed'],
+  FORBID_ATTR: ['style', 'onclick', 'onerror', 'onload', 'onmouseover'],
+  USE_PROFILES: { html: true }, // Solo permite HTML seguro
+});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

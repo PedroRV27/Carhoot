@@ -923,3 +923,101 @@ input.error {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-top: 10px;
 }
+
+/* Estilos para el spinner de carga */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  text-align: center;
+  padding: 20px;
+}
+
+.spinner {
+  width: 70px;
+  height: 70px;
+  border: 8px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #3498db;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+.dark-theme .spinner {
+  border-top-color: #3a86ff;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estilo para el mensaje de carga */
+.spinner-container span {
+  font-size: 1.2rem;
+  color: #333;
+  margin-top: 15px;
+}
+
+.dark-theme .spinner-container span {
+  color: #f8f9fa;
+}
+
+/* Estilo para cuando no hay vehículo */
+.no-vehicle-card {
+  margin-top: 50px;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.dark-theme .no-vehicle-card {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.no-vehicle-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.dark-theme .no-vehicle-title {
+  color: #ecf0f1;
+}
+
+.no-vehicle-message {
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.dark-theme .no-vehicle-message {
+  color: #bdc3c7;
+}
+
+.no-vehicle-submessage {
+  font-size: 1rem;
+  color: #777;
+}
+
+.dark-theme .no-vehicle-submessage {
+  color: #95a5a6;
+}
+
+/* Animación de fade in para el spinner */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.spinner-container {
+  animation: fadeIn 0.5s ease-in;
+}

@@ -25,18 +25,65 @@ DOMPurify.setConfig({
   ADD_ATTR: ['target'],
 });
 
-const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
-  <input
-    type="text"
-    className={`form-control input-field ${status}`}
-    placeholder={placeholder}
-    value={DOMPurify.sanitize(value || '')}
-    onChange={onChange}
-    onKeyDown={onKeyDown}
-    disabled={disabled}
-  />
-);
+// Función de sanitización mejorada
+const sanitizeInput = (input, type = 'text') => {
+  if (typeof input !== 'string') return '';
+  
+  // Sanitización básica con DOMPurify
+  let sanitized = DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true
+  });
+  
+  // Validación específica por tipo
+  switch(type) {
+    case 'year':
+      sanitized = sanitized.replace(/[^0-9]/g, '');
+      // Limitar a 4 dígitos para años
+      if (sanitized.length > 4) {
+        sanitized = sanitized.substring(0, 4);
+      }
+      break;
+    case 'brand':
+    case 'model':
+      // Permitir letras, números, espacios y algunos caracteres especiales comunes
+      sanitized = sanitized.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-.,]/g, '');
+      // Limitar longitud
+      if (sanitized.length > 30) {
+        sanitized = sanitized.substring(0, 30);
+      }
+      break;
+    default:
+      sanitized = sanitized.replace(/[<>"'`]/g, '');
+  }
+  
+  return sanitized.trim();
+};
 
+// Componente InputField con validación mejorada
+const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled, type = 'text' }) => {
+  const handleChange = (e) => {
+    const sanitizedValue = sanitizeInput(e.target.value, type);
+    e.target.value = sanitizedValue;
+    onChange(e);
+  };
+
+  return (
+    <input
+      type="text"
+      className={`form-control input-field ${status}`}
+      placeholder={DOMPurify.sanitize(placeholder || '')}
+      value={DOMPurify.sanitize(value || '')}
+      onChange={handleChange}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+      maxLength={type === 'year' ? 4 : 30}
+    />
+  );
+};
+
+// Componente para mostrar intentos fallidos con sanitización
 const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
   <ul className="list-group intentos-fallidos">
     {attempts
@@ -52,11 +99,17 @@ const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
   </ul>
 );
 
+// Función para normalizar strings para comparación
 const normalizeString = (str) => {
   return typeof str === 'string' 
     ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
     : String(str).toLowerCase().trim();
 };
+
+// Función para renderizar texto seguro
+const renderSafeText = (text) => (
+  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text?.toString() || '') }} />
+);
 
 const Juego = () => {
   const { theme, language } = useContext(AppContext);
@@ -83,60 +136,92 @@ const Juego = () => {
   const [noVehicleToday, setNoVehicleToday] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Función de validación de entrada
   const validateInput = (input, correctValue) => {
     if (!input || !correctValue) return false;
     return normalizeString(input) === normalizeString(correctValue);
   };
 
+  // Función mejorada para validar año
   const validateYear = (input, correctValue) => {
+    // Verificar que solo contiene números
+    if (!/^\d+$/.test(input)) return false;
+    
     const userYear = parseInt(input);
     const correctYear = parseInt(correctValue);
+    
+    // Validar rango razonable para un año de fabricación
+    if (userYear < 1886 || userYear > new Date().getFullYear() + 1) {
+      return false;
+    }
+    
     return !isNaN(userYear) && userYear === correctYear;
   };
 
+  // Efecto para cargar datos iniciales
   useEffect(() => {
-  checkAndResetDailyProgress();
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const coches = await getCoches();
-      const hoy = new Date().toISOString().split("T")[0];
-      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-      
-      if (vehiculo) {
-        setVehiculoDelDia(vehiculo);
-        const savedData = loadGameProgress(vehiculo);
+    checkAndResetDailyProgress();
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const coches = await getCoches();
+        const hoy = new Date().toISOString().split("T")[0];
         
-        if (savedData) {
-          // Verificar intentos usados en modo difícil
-          const totalAttemptsKey = `totalAttemptsUsed_${hoy}`;
-          const attemptsUsed = savedData.totalAttemptsUsed || 0;
-          const remainingAttempts = 9 - attemptsUsed;
+        // Función para sanitizar los datos del vehículo
+        const sanitizeVehicle = (vehicle) => {
+          if (!vehicle) return null;
+          return {
+            ...vehicle,
+            Marca: sanitizeInput(vehicle.Marca, 'brand'),
+            Modelo: sanitizeInput(vehicle.Modelo, 'model'),
+            AnoFabricacion: sanitizeInput(vehicle.AnoFabricacion?.toString(), 'year'),
+            Imagenes: vehicle.Imagenes?.map(img => 
+              DOMPurify.sanitize(img, {
+                ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+              })
+            ) || []
+          };
+        };
+        
+        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+        const sanitizedVehicle = vehiculo ? sanitizeVehicle(vehiculo) : null;
+        setVehiculoDelDia(sanitizedVehicle);
+        
+        if (sanitizedVehicle) {
+          const savedData = loadGameProgress(sanitizedVehicle);
           
-          // Si quedan menos de 5 intentos (umbral para pistas), mostrar advertencia
-          if (remainingAttempts < 5) {
-            // Puedes mostrar un mensaje al usuario si lo deseas
+          if (savedData) {
+            // Verificar intentos usados en modo difícil
+            const totalAttemptsKey = `totalAttemptsUsed_${hoy}`;
+            const attemptsUsed = savedData.totalAttemptsUsed || 0;
+            const remainingAttempts = 9 - attemptsUsed;
+            
+            if (remainingAttempts < 5) {
+              // Mostrar advertencia si quedan pocos intentos
+              console.warn("Quedan pocos intentos disponibles");
+            }
           }
+        } else {
+          setNoVehicleToday(true);
         }
-      } else {
+      } catch (error) {
         setNoVehicleToday(true);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      setNoVehicleToday(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchData();
-}, []);
+    fetchData();
+  }, []);
 
+  // Efecto para cargar progreso guardado
   useEffect(() => {
     if (vehiculoDelDia) {
       loadProgress();
     }
   }, [vehiculoDelDia]);
 
+  // Efecto para guardar progreso
   useEffect(() => {
     if (!vehiculoDelDia) return;
 
@@ -153,6 +238,7 @@ const Juego = () => {
     saveGameProgress(vehiculoDelDia, progressData);
   }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, vehiculoDelDia]);
 
+  // Función para cargar progreso
   const loadProgress = () => {
     const savedData = loadGameProgress(vehiculoDelDia);
     if (savedData) {
@@ -175,14 +261,20 @@ const Juego = () => {
     }
   };
 
+  // Manejador de cambio de input con sanitización
   const handleInputChange = (e, field) => {
-    const rawValue = e.target.value;
-    const value = DOMPurify.sanitize(rawValue);
-    if (field === "marca") setMarca(value);
-    if (field === "modelo") setModelo(value);
-    if (field === "anoFabricacion") setAnoFabricacion(value);
+    const sanitizedValue = sanitizeInput(
+      e.target.value, 
+      field === "anoFabricacion" ? "year" : 
+      field === "marca" ? "brand" : "model"
+    );
+    
+    if (field === "marca") setMarca(sanitizedValue);
+    if (field === "modelo") setModelo(sanitizedValue);
+    if (field === "anoFabricacion") setAnoFabricacion(sanitizedValue);
   };
 
+  // Estilo para intentos fallidos de año
   const getAnoFallidoStyle = (fallido) => {
     const userYear = parseInt(fallido);
     const correctYear = parseInt(vehiculoDelDia?.AnoFabricacion || 0);
@@ -196,52 +288,58 @@ const Juego = () => {
     return "fallido custom-bg-danger";
   };
 
-  const renderSafeText = (text) => (
-    <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text?.toString() || '') }} />
-  );
+  // Manejador de adivinanza
+  const handleGuess = () => {
+    if (!vehiculoDelDia) return;
 
- const handleGuess = () => {
-  if (!vehiculoDelDia) return;
+    const nuevoIntento = (field, value) => {
+      const sanitizedValue = sanitizeInput(
+        value, 
+        field === "anoFabricacion" ? "year" : 
+        field === "marca" ? "brand" : "model"
+      );
+      
+      const newIntentosFallidos = {
+        ...intentosFallidos,
+        [field]: [...intentosFallidos[field], sanitizedValue]
+      };
+      const newErrorCount = errorCount + 1;
+      
+      setIntentosFallidos(newIntentosFallidos);
+      setErrorCount(newErrorCount);
 
-  const nuevoIntento = (field, value) => {
-    const sanitizedValue = DOMPurify.sanitize(value);
-    const newIntentosFallidos = {
-      ...intentosFallidos,
-      [field]: [...intentosFallidos[field], sanitizedValue]
+      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
+      setMaxImageIndex(nuevoMaxIndex);
+      setCurrentImageIndex(nuevoMaxIndex);
+
+      return { newIntentosFallidos, newErrorCount, nuevoMaxIndex };
     };
-    const newErrorCount = errorCount + 1;
-    
-    setIntentosFallidos(newIntentosFallidos);
-    setErrorCount(newErrorCount);
 
-    const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
-    setMaxImageIndex(nuevoMaxIndex);
-    setCurrentImageIndex(nuevoMaxIndex);
+    const saveProgress = (newState = {}) => {
+      const attemptsUsed = (newState.errorCount || errorCount) + 
+                         (newState.intentosFallidos?.marca?.length || intentosFallidos.marca.length) +
+                         (newState.intentosFallidos?.modelo?.length || intentosFallidos.modelo.length) +
+                         (newState.intentosFallidos?.anoFabricacion?.length || intentosFallidos.anoFabricacion.length);
+      
+      saveGameProgress(vehiculoDelDia, {
+        modo: 'normal',
+        step: newState.step !== undefined ? newState.step : step,
+        isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
+        intentosFallidos: newState.intentosFallidos || intentosFallidos,
+        errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
+        maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
+        revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
+        currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
+        totalAttemptsUsed: attemptsUsed
+      });
+    };
 
-    return { newIntentosFallidos, newErrorCount, nuevoMaxIndex };
-  };
+    // Usar valores sanitizados para las validaciones
+    const safeMarca = sanitizeInput(marca, 'brand');
+    const safeModelo = sanitizeInput(modelo, 'model');
+    const safeAno = sanitizeInput(anoFabricacion, 'year');
 
-  const saveProgress = (newState = {}) => {
-    // Calcular intentos usados (sumando los nuevos errores)
-    const attemptsUsed = (newState.errorCount || errorCount) + 
-                       (newState.intentosFallidos?.marca?.length || intentosFallidos.marca.length) +
-                       (newState.intentosFallidos?.modelo?.length || intentosFallidos.modelo.length) +
-                       (newState.intentosFallidos?.anoFabricacion?.length || intentosFallidos.anoFabricacion.length);
-    
-    saveGameProgress(vehiculoDelDia, {
-      modo: 'normal',
-      step: newState.step !== undefined ? newState.step : step,
-      isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
-      intentosFallidos: newState.intentosFallidos || intentosFallidos,
-      errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
-      maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
-      revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
-      currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
-      totalAttemptsUsed: attemptsUsed
-    });
-  };
-
-    if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
+    if (step === 1 && validateInput(safeMarca, vehiculoDelDia.Marca)) {
       setInputStatus("success");
       setTimeout(() => {
         setStep(2);
@@ -267,7 +365,7 @@ const Juego = () => {
         maxImageIndex: nuevoMaxIndex,
         currentImageIndex: nuevoMaxIndex
       });
-    } else if (step === 2 && validateInput(modelo, vehiculoDelDia.Modelo)) {
+    } else if (step === 2 && validateInput(safeModelo, vehiculoDelDia.Modelo)) {
       setInputStatus("success");
       setTimeout(() => {
         setStep(3);
@@ -293,7 +391,7 @@ const Juego = () => {
         maxImageIndex: nuevoMaxIndex,
         currentImageIndex: nuevoMaxIndex
       });
-    } else if (step === 3 && validateYear(anoFabricacion, vehiculoDelDia.AnoFabricacion)) {
+    } else if (step === 3 && validateYear(safeAno, vehiculoDelDia.AnoFabricacion)) {
       setInputStatus("success");
       setTimeout(() => {
         setIsCompleted(true);
@@ -331,6 +429,7 @@ const Juego = () => {
     }
   };
 
+  // Manejador de teclado
   const handleKeyDown = (e) => {
     if (
       e.key === "Enter" &&
@@ -342,6 +441,7 @@ const Juego = () => {
     }
   };
 
+  // Mostrar modal de pista
   const handleShowHintModal = () => {
     if (errorCount >= 5) {
       const newRevealedLetters = Math.floor((errorCount - 5) / 3) + 1;
@@ -350,6 +450,7 @@ const Juego = () => {
     }
   };
 
+  // Obtener texto revelado para pistas
   const getRevealedText = () => {
     if (!vehiculoDelDia) return "";
     
@@ -420,9 +521,15 @@ const Juego = () => {
                   {renderSafeText(vehiculoDelDia.Marca)} {renderSafeText(vehiculoDelDia.Modelo)} {renderSafeText(vehiculoDelDia.AnoFabricacion?.toString())}
                 </h2>
                 <img
-                  src={vehiculoDelDia.Imagenes[4]}
+                  src={DOMPurify.sanitize(vehiculoDelDia.Imagenes[4], {
+                    ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+                  })}
                   alt={t("game.vehicleImageAlt")}
                   className="success-image img-fluid rounded"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = 'placeholder-image.jpg';
+                  }}
                 />
                 <p className="come-back-tomorrow">{renderSafeText(t("game.comeBackTomorrow"))}</p>
               </div>
@@ -446,9 +553,15 @@ const Juego = () => {
               <div className="card-body">
                 <div className="position-relative">
                   <img
-                    src={vehiculoDelDia.Imagenes[currentImageIndex]}
+                    src={DOMPurify.sanitize(vehiculoDelDia.Imagenes[currentImageIndex], {
+                      ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+                    })}
                     alt={t("game.vehicleImageAlt")}
                     className="img-fluid rounded vehicle-image"
+                    onError={(e) => {
+                      e.target.onerror = null; 
+                      e.target.src = 'placeholder-image.jpg';
+                    }}
                   />
                 </div>
 
@@ -492,6 +605,7 @@ const Juego = () => {
                           onChange={(e) => handleInputChange(e, "marca")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
+                          type="brand"
                         />
                       </div>
                       <button
@@ -517,6 +631,7 @@ const Juego = () => {
                           onChange={(e) => handleInputChange(e, "modelo")}
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
+                          type="model"
                         />
                       </div>
                       <button
@@ -543,6 +658,7 @@ const Juego = () => {
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
                           disabled={isCompleted}
+                          type="year"
                         />
                       </div>
                     </div>

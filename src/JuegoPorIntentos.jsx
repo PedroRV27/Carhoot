@@ -12,18 +12,72 @@ import Button from 'react-bootstrap/Button';
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import { saveGameProgress, loadGameProgress, checkAndResetDailyProgress } from "./utils/gameProgress";
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 
-const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
-  <input
-    type="text"
-    className={`form-control input-field ${status}`}
-    placeholder={placeholder}
-    value={value}
-    onChange={onChange}
-    onKeyDown={onKeyDown}
-    disabled={disabled}
-  />
-);
+// Configuración avanzada de DOMPurify
+DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
+  if (data.attrName === 'style') return false;
+});
+
+DOMPurify.setConfig({
+  FORBID_TAGS: ['style', 'script', 'iframe', 'frame', 'object', 'embed'],
+  FORBID_ATTR: ['style', 'onclick', 'onerror', 'onload', 'onmouseover'],
+  USE_PROFILES: { html: true },
+  ADD_ATTR: ['target'],
+});
+
+// Función de sanitización mejorada
+const sanitizeInput = (input, type = 'text') => {
+  if (typeof input !== 'string') return '';
+  
+  let sanitized = DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true
+  });
+  
+  switch(type) {
+    case 'year':
+      sanitized = sanitized.replace(/[^0-9]/g, '');
+      if (sanitized.length > 4) {
+        sanitized = sanitized.substring(0, 4);
+      }
+      break;
+    case 'brand':
+    case 'model':
+      sanitized = sanitized.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-.,]/g, '');
+      if (sanitized.length > 30) {
+        sanitized = sanitized.substring(0, 30);
+      }
+      break;
+    default:
+      sanitized = sanitized.replace(/[<>"'`]/g, '');
+  }
+  
+  return sanitized.trim();
+};
+
+// Componente InputField con validación mejorada
+const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled, type = 'text' }) => {
+  const handleChange = (e) => {
+    const sanitizedValue = sanitizeInput(e.target.value, type);
+    e.target.value = sanitizedValue;
+    onChange(e);
+  };
+
+  return (
+    <input
+      type="text"
+      className={`form-control input-field ${status}`}
+      placeholder={DOMPurify.sanitize(placeholder || '')}
+      value={DOMPurify.sanitize(value || '')}
+      onChange={handleChange}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+      maxLength={type === 'year' ? 4 : 30}
+    />
+  );
+};
 
 const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
   <ul className="list-group intentos-fallidos">
@@ -31,11 +85,18 @@ const FailedAttemptsList = ({ attempts, getFallidoStyle }) => (
       .slice()
       .reverse()
       .map((intento, idx) => (
-        <li key={idx} className={`list-group-item ${getFallidoStyle ? getFallidoStyle(intento) : ""}`}>
-          {intento}
-        </li>
+        <li 
+          key={idx} 
+          className={`list-group-item ${getFallidoStyle ? getFallidoStyle(intento) : ""}`}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(intento || '') }}
+        />
       ))}
   </ul>
+);
+
+// Función para renderizar texto seguro
+const renderSafeText = (text) => (
+  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text?.toString() || '') }} />
 );
 
 // Función mejorada para normalizar strings
@@ -72,6 +133,7 @@ const JuegoPorIntentos = () => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [noVehicleToday, setNoVehicleToday] = useState(false);
 
   // Función mejorada de validación
   const validateInput = (input, correctValue) => {
@@ -81,8 +143,15 @@ const JuegoPorIntentos = () => {
 
   // Función mejorada para validar año
   const validateYear = (input, correctValue) => {
+    if (!/^\d+$/.test(input)) return false;
+    
     const userYear = parseInt(input);
     const correctYear = parseInt(correctValue);
+    
+    if (userYear < 1886 || userYear > new Date().getFullYear() + 1) {
+      return false;
+    }
+    
     return !isNaN(userYear) && userYear === correctYear;
   };
 
@@ -92,19 +161,67 @@ const JuegoPorIntentos = () => {
         setIsLoading(true);
         const coches = await getCoches();
         const hoy = new Date().toISOString().split("T")[0];
-        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-        setVehiculoDelDia(vehiculo);
         
-        if (vehiculo) {
-          loadProgress();
+        const sanitizeVehicle = (vehicle) => {
+          if (!vehicle) return null;
+          return {
+            ...vehicle,
+            Marca: sanitizeInput(vehicle.Marca, 'brand'),
+            Modelo: sanitizeInput(vehicle.Modelo, 'model'),
+            AnoFabricacion: sanitizeInput(vehicle.AnoFabricacion?.toString(), 'year'),
+            Imagenes: vehicle.Imagenes?.map(img => 
+              DOMPurify.sanitize(img, {
+                ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+              })
+            ) || []
+          };
+        };
+        
+        const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
+        const sanitizedVehicle = vehiculo ? sanitizeVehicle(vehiculo) : null;
+        setVehiculoDelDia(sanitizedVehicle);
+        
+        if (sanitizedVehicle) {
+          const savedData = loadGameProgress(sanitizedVehicle, 'dificil');
+          
+          if (savedData) {
+            setStep(savedData.step || 1);
+            setIsCompleted(savedData.isCompleted || false);
+            setIntentosFallidos(savedData.intentosFallidos || {
+              marca: [],
+              modelo: [],
+              anoFabricacion: []
+            });
+            setErrorCount(savedData.errorCount || 0);
+            setMaxImageIndex(savedData.maxImageIndex || 0);
+            setRevealedLetters(savedData.revealedLetters || 0);
+            setCurrentImageIndex(savedData.currentImageIndex || 0);
+            
+            const attemptsUsed = savedData.totalAttemptsUsed || 0;
+            setTotalAttempts(Math.max(0, 9 - attemptsUsed));
+            
+            if (savedData.isCompleted) {
+              setMaxImageIndex(4);
+              setCurrentImageIndex(4);
+            }
+          } else {
+            const totalAttemptsKey = `totalAttemptsUsed_${hoy}`;
+            const attemptsUsed = parseInt(localStorage.getItem(totalAttemptsKey)) || 
+                               parseInt(Cookies.get(totalAttemptsKey)) || 0;
+            setTotalAttempts(Math.max(0, 9 - attemptsUsed));
+          }
+        } else {
+          setNoVehicleToday(true);
         }
       } catch (error) {
-        console.error("Error fetching vehicle:", error);
+        console.error("Error loading game data:", error);
+        setNoVehicleToday(true);
       } finally {
         setIsLoading(false);
       }
     };
 
+    checkAndResetDailyProgress();
     fetchData();
   }, []);
 
@@ -130,59 +247,6 @@ const JuegoPorIntentos = () => {
     });
   }, [step, isCompleted, intentosFallidos, errorCount, maxImageIndex, revealedLetters, currentImageIndex, totalAttempts, vehiculoDelDia]);
 
-  useEffect(() => {
-  checkAndResetDailyProgress();
-  
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const coches = await getCoches();
-      const hoy = new Date().toISOString().split("T")[0];
-      const vehiculo = coches.find((coche) => coche.fechaProgramada === hoy);
-      setVehiculoDelDia(vehiculo);
-      
-      if (vehiculo) {
-        const savedData = loadGameProgress(vehiculo, 'dificil');
-        
-        if (savedData) {
-          setStep(savedData.step || 1);
-          setIsCompleted(savedData.isCompleted || false);
-          setIntentosFallidos(savedData.intentosFallidos || {
-            marca: [],
-            modelo: [],
-            anoFabricacion: []
-          });
-          setErrorCount(savedData.errorCount || 0);
-          setMaxImageIndex(savedData.maxImageIndex || 0);
-          setRevealedLetters(savedData.revealedLetters || 0);
-          setCurrentImageIndex(savedData.currentImageIndex || 0);
-          
-          // Calcular intentos basado en el total usado (compartido entre modos)
-          const attemptsUsed = savedData.totalAttemptsUsed || 0;
-          setTotalAttempts(Math.max(0, 9 - attemptsUsed));
-          
-          if (savedData.isCompleted) {
-            setMaxImageIndex(4);
-            setCurrentImageIndex(4);
-          }
-        } else {
-          // Verificar si hay intentos usados en el otro modo
-          const totalAttemptsKey = `totalAttemptsUsed_${hoy}`;
-          const attemptsUsed = parseInt(localStorage.getItem(totalAttemptsKey)) || 
-                             parseInt(Cookies.get(totalAttemptsKey)) || 0;
-          setTotalAttempts(Math.max(0, 9 - attemptsUsed));
-        }
-      }
-    } catch (error) {
-      console.error("Error loading game data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  fetchData();
-}, []);
-
   const loadProgress = () => {
     const savedData = loadGameProgress(vehiculoDelDia);
     if (savedData) {
@@ -202,15 +266,20 @@ const JuegoPorIntentos = () => {
   };
 
   const handleInputChange = (e, field) => {
-    const value = e.target.value;
-    if (field === "marca") setMarca(value);
-    if (field === "modelo") setModelo(value);
-    if (field === "anoFabricacion") setAnoFabricacion(value);
+    const sanitizedValue = sanitizeInput(
+      e.target.value, 
+      field === "anoFabricacion" ? "year" : 
+      field === "marca" ? "brand" : "model"
+    );
+    
+    if (field === "marca") setMarca(sanitizedValue);
+    if (field === "modelo") setModelo(sanitizedValue);
+    if (field === "anoFabricacion") setAnoFabricacion(sanitizedValue);
   };
 
   const getAnoFallidoStyle = (fallido) => {
     const userYear = parseInt(fallido);
-    const correctYear = parseInt(vehiculoDelDia.AnoFabricacion);
+    const correctYear = parseInt(vehiculoDelDia?.AnoFabricacion || 0);
     
     if (isNaN(userYear)) return "fallido custom-bg-danger";
     
@@ -222,42 +291,47 @@ const JuegoPorIntentos = () => {
   };
 
   const handleGuess = () => {
-  if (!vehiculoDelDia || totalAttempts <= 0) return;
+    if (!vehiculoDelDia || totalAttempts <= 0) return;
 
-  const nuevoIntento = (field, value) => {
-    const newIntentosFallidos = {
-      ...intentosFallidos,
-      [field]: [...intentosFallidos[field], value]
+    const nuevoIntento = (field, value) => {
+      const sanitizedValue = sanitizeInput(
+        value, 
+        field === "anoFabricacion" ? "year" : 
+        field === "marca" ? "brand" : "model"
+      );
+      const newIntentosFallidos = {
+        ...intentosFallidos,
+        [field]: [...intentosFallidos[field], sanitizedValue]
+      };
+      const newErrorCount = errorCount + 1;
+      const newTotalAttempts = totalAttempts - 1;
+      const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
+
+      setIntentosFallidos(newIntentosFallidos);
+      setErrorCount(newErrorCount);
+      setTotalAttempts(newTotalAttempts);
+      setMaxImageIndex(nuevoMaxIndex);
+      setCurrentImageIndex(nuevoMaxIndex);
+
+      return { newIntentosFallidos, newErrorCount, newTotalAttempts, nuevoMaxIndex };
     };
-    const newErrorCount = errorCount + 1;
-    const newTotalAttempts = totalAttempts - 1;
-    const nuevoMaxIndex = Math.min(maxImageIndex + 1, 3);
 
-    setIntentosFallidos(newIntentosFallidos);
-    setErrorCount(newErrorCount);
-    setTotalAttempts(newTotalAttempts);
-    setMaxImageIndex(nuevoMaxIndex);
-    setCurrentImageIndex(nuevoMaxIndex);
-
-    return { newIntentosFallidos, newErrorCount, newTotalAttempts, nuevoMaxIndex };
-  };
-
-  const saveProgress = (newState = {}) => {
-    const attemptsUsed = 9 - (newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts);
-    
-    saveGameProgress(vehiculoDelDia, {
-      modo: 'dificil',
-      step: newState.step !== undefined ? newState.step : step,
-      isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
-      intentosFallidos: newState.intentosFallidos || intentosFallidos,
-      errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
-      maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
-      revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
-      currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
-      totalAttempts: newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts,
-      totalAttemptsUsed: attemptsUsed
-    });
-  };
+    const saveProgress = (newState = {}) => {
+      const attemptsUsed = 9 - (newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts);
+      
+      saveGameProgress(vehiculoDelDia, {
+        modo: 'dificil',
+        step: newState.step !== undefined ? newState.step : step,
+        isCompleted: newState.isCompleted !== undefined ? newState.isCompleted : isCompleted,
+        intentosFallidos: newState.intentosFallidos || intentosFallidos,
+        errorCount: newState.errorCount !== undefined ? newState.errorCount : errorCount,
+        maxImageIndex: newState.maxImageIndex !== undefined ? newState.maxImageIndex : maxImageIndex,
+        revealedLetters: newState.revealedLetters !== undefined ? newState.revealedLetters : revealedLetters,
+        currentImageIndex: newState.currentImageIndex !== undefined ? newState.currentImageIndex : currentImageIndex,
+        totalAttempts: newState.totalAttempts !== undefined ? newState.totalAttempts : totalAttempts,
+        totalAttemptsUsed: attemptsUsed
+      });
+    };
 
     if (step === 1 && validateInput(marca, vehiculoDelDia.Marca)) {
       setInputStatus("success");
@@ -397,7 +471,34 @@ const JuegoPorIntentos = () => {
     return (
       <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
-        <span>{t('game.loading')}</span>
+        <span>{renderSafeText(t('game.loading'))}</span>
+      </div>
+    );
+  }
+
+  if (noVehicleToday) {
+    return (
+      <div className={containerClass}>
+        <Header />
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-8">
+              <div className="card no-vehicle-card">
+                <div className="card-body text-center">
+                  <h2 className="mb-4 no-vehicle-title">
+                    {renderSafeText(t("game.noVehicleTitle"))}
+                  </h2>
+                  <p className="lead no-vehicle-message">
+                    {renderSafeText(t("game.noVehicleMessage"))}
+                  </p>
+                  <p className="no-vehicle-submessage">
+                    {renderSafeText(t("game.noVehicleSubmessage"))}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -406,7 +507,7 @@ const JuegoPorIntentos = () => {
     return (
       <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
-        <span>{t('game.loading')}</span>
+        <span>{renderSafeText(t('game.loading'))}</span>
       </div>
     );
   }
@@ -420,14 +521,20 @@ const JuegoPorIntentos = () => {
             <div className="col-md-8">
               <div className="text-center success-container">
                 <h2 className="success-message">
-                  {vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} ({vehiculoDelDia.AnoFabricacion})
+                  {renderSafeText(vehiculoDelDia.Marca)} {renderSafeText(vehiculoDelDia.Modelo)} ({renderSafeText(vehiculoDelDia.AnoFabricacion?.toString())})
                 </h2>
                 <img
-                  src={vehiculoDelDia.Imagenes[4]}
+                  src={DOMPurify.sanitize(vehiculoDelDia.Imagenes[4], {
+                    ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+                  })}
                   alt={t('game.vehicleImageAlt')}
                   className="success-image img-fluid rounded"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = 'placeholder-image.jpg';
+                  }}
                 />
-                 <p className="come-back-tomorrow">{t("game.comeBackTomorrow")}</p>
+                <p className="come-back-tomorrow">{renderSafeText(t("game.comeBackTomorrow"))}</p>
               </div>
             </div>
           </div>
@@ -438,7 +545,7 @@ const JuegoPorIntentos = () => {
             className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
             onClick={() => setShowPrivacyPolicy(true)}
           >
-            {t("game.privacyPolicy")}
+            {renderSafeText(t("game.privacyPolicy"))}
           </button>
         </div>
 
@@ -451,7 +558,7 @@ const JuegoPorIntentos = () => {
     );
   }
 
-  return (
+return (
     <div className={containerClass}>
       <Header />
       <div className="container">
@@ -459,17 +566,23 @@ const JuegoPorIntentos = () => {
           <div className="col-md-8">
             <div className="card">
               <div className="title-container">
-                <h1 className="game-title">{t('game.title')}</h1>
+                <h1 className="game-title">{renderSafeText(t('game.title'))}</h1>
                 <div className="attempts-counter">
-                  {t('game.attempts')}: <strong>{totalAttempts}/9</strong>
+                  {renderSafeText(t('game.attempts'))}: <strong>{totalAttempts}/9</strong>
                 </div>
               </div>
               <div className="card-body">
                 <div className="position-relative">
                   <img
-                    src={vehiculoDelDia.Imagenes[currentImageIndex]}
+                    src={DOMPurify.sanitize(vehiculoDelDia.Imagenes[currentImageIndex], {
+                      ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+                    })}
                     alt={t('game.vehicleImageAlt')}
                     className="img-fluid rounded vehicle-image"
+                    onError={(e) => {
+                      e.target.onerror = null; 
+                      e.target.src = 'placeholder-image.jpg';
+                    }}
                   />
                 </div>
 
@@ -479,7 +592,7 @@ const JuegoPorIntentos = () => {
                       key={index}
                       className={`dot ${index === currentImageIndex ? "active" : ""}`}
                       onClick={() => setCurrentImageIndex(index)}
-                    ></button>
+                    />
                   ))}
                 </div>
 
@@ -487,17 +600,17 @@ const JuegoPorIntentos = () => {
                   <div className="resultado-container">
                     {step > 1 && (
                       <div className="resultado-adivinado animate">
-                        {t('game.brand')}: <strong>{vehiculoDelDia.Marca}</strong>
+                        {renderSafeText(t('game.brand'))}: <strong>{renderSafeText(vehiculoDelDia.Marca)}</strong>
                       </div>
                     )}
                     {step > 2 && (
                       <div className="resultado-adivinado animate">
-                        {t('game.model')}: <strong>{vehiculoDelDia.Modelo}</strong>
+                        {renderSafeText(t('game.model'))}: <strong>{renderSafeText(vehiculoDelDia.Modelo)}</strong>
                       </div>
                     )}
                     {isCompleted && (
                       <div className="resultado-adivinado animate">
-                        {t('game.year')}: <strong>{vehiculoDelDia.AnoFabricacion}</strong>
+                        {renderSafeText(t('game.year'))}: <strong>{renderSafeText(vehiculoDelDia.AnoFabricacion?.toString())}</strong>
                       </div>
                     )}
                   </div>
@@ -514,6 +627,7 @@ const JuegoPorIntentos = () => {
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
                           disabled={totalAttempts <= 0 || isCompleted}
+                          type="brand"
                         />
                       </div>
                       <button
@@ -539,6 +653,7 @@ const JuegoPorIntentos = () => {
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
                           disabled={totalAttempts <= 0 || isCompleted}
+                          type="model"
                         />
                       </div>
                       <button
@@ -564,6 +679,7 @@ const JuegoPorIntentos = () => {
                           onKeyDown={handleKeyDown}
                           status={inputStatus}
                           disabled={totalAttempts <= 0 || isCompleted}
+                          type="year"
                         />
                       </div>
                     </div>
@@ -575,7 +691,7 @@ const JuegoPorIntentos = () => {
                       onClick={handleGuess}
                       disabled={(!marca && !modelo && !anoFabricacion) || totalAttempts <= 0 || isCompleted}
                     >
-                      {t('game.guessButton')}
+                      {renderSafeText(t('game.guessButton'))}
                     </button>
                   </div>
 
@@ -592,7 +708,7 @@ const JuegoPorIntentos = () => {
 
                   {isCompleted && (
                     <div className="mt-4 alert alert-success">
-                      {t('game.congratulations')}
+                      {renderSafeText(t('game.congratulations'))}
                     </div>
                   )}
                 </div>
@@ -607,7 +723,7 @@ const JuegoPorIntentos = () => {
           className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
           onClick={() => setShowPrivacyPolicy(true)}
         >
-          {t("game.privacyPolicy")}
+          {renderSafeText(t("game.privacyPolicy"))}
         </button>
       </div>
 
@@ -629,7 +745,7 @@ const JuegoPorIntentos = () => {
           closeVariant={theme === "dark" ? "white" : undefined}
         >
           <Modal.Title style={{ fontFamily: "'Grechen', sans-serif", fontSize: "28px" }}>
-            {t('gameOverModal.title')}
+            {renderSafeText(t('gameOverModal.title'))}
           </Modal.Title>
         </Modal.Header>
         
@@ -639,7 +755,7 @@ const JuegoPorIntentos = () => {
             fontSize: "18px",
             marginBottom: "20px"
           }}>
-            {t('gameOverModal.message')}
+            {renderSafeText(t('gameOverModal.message'))}
           </div>
           
           <div style={{
@@ -657,7 +773,7 @@ const JuegoPorIntentos = () => {
                 marginRight: "10px"
               }} 
             />
-            {t('gameOverModal.hint')}
+            {renderSafeText(t('gameOverModal.hint'))}
           </div>
         </Modal.Body>
         
@@ -671,7 +787,7 @@ const JuegoPorIntentos = () => {
               borderRadius: "5px"
             }}
           >
-            {t('gameOverModal.continueButton')}
+            {renderSafeText(t('gameOverModal.continueButton'))}
           </Button>
           
           <Button 
@@ -686,7 +802,7 @@ const JuegoPorIntentos = () => {
               color: "#000"
             }}
           >
-            {t('gameOverModal.showResultButton')}
+            {renderSafeText(t('gameOverModal.showResultButton'))}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -703,7 +819,7 @@ const JuegoPorIntentos = () => {
           closeVariant={theme === "dark" ? "white" : undefined}
         >
           <Modal.Title style={{ fontFamily: "'Grechen', sans-serif", fontSize: "28px" }}>
-            {t('confirmationModal.title')}
+            {renderSafeText(t('confirmationModal.title'))}
           </Modal.Title>
         </Modal.Header>
         
@@ -713,7 +829,7 @@ const JuegoPorIntentos = () => {
             fontSize: "18px",
             marginBottom: "20px"
           }}>
-            {t('confirmationModal.message')}
+            {renderSafeText(t('confirmationModal.message'))}
           </div>
         </Modal.Body>
         
@@ -727,7 +843,7 @@ const JuegoPorIntentos = () => {
               borderRadius: "5px"
             }}
           >
-            {t('confirmationModal.cancelButton')}
+            {renderSafeText(t('confirmationModal.cancelButton'))}
           </Button>
           
           <Button 
@@ -746,7 +862,7 @@ const JuegoPorIntentos = () => {
               color: "#000"
             }}
           >
-            {t('confirmationModal.showResultButton')}
+            {renderSafeText(t('confirmationModal.showResultButton'))}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -762,26 +878,32 @@ const JuegoPorIntentos = () => {
           className={theme === "dark" ? "bg-dark text-white border-secondary" : ""}
           closeVariant={theme === "dark" ? "white" : undefined}
         >
-          <Modal.Title>{t('resultModal.title')}</Modal.Title>
+          <Modal.Title>{renderSafeText(t('resultModal.title'))}</Modal.Title>
         </Modal.Header>
         <Modal.Body className={`text-center ${theme === "dark" ? "bg-dark text-white" : ""}`}>
-          <h4>{vehiculoDelDia.Marca} {vehiculoDelDia.Modelo} ({vehiculoDelDia.AnoFabricacion})</h4>
+          <h4>{renderSafeText(vehiculoDelDia.Marca)} {renderSafeText(vehiculoDelDia.Modelo)} ({renderSafeText(vehiculoDelDia.AnoFabricacion?.toString())})</h4>
           <img
-            src={vehiculoDelDia.Imagenes[4]}
+            src={DOMPurify.sanitize(vehiculoDelDia.Imagenes[4], {
+              ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+            })}
             alt={t('game.vehicleImageAlt')}
             className="img-fluid rounded mt-3"
+            onError={(e) => {
+              e.target.onerror = null; 
+              e.target.src = 'placeholder-image.jpg';
+            }}
           />
           <div className="mt-3">
-            <p>{t('resultModal.progress')}</p>
-            {step > 1 && <p>{t('game.brand')}: <strong>{vehiculoDelDia.Marca}</strong></p>}
-            {step > 2 && <p>{t('game.model')}: <strong>{vehiculoDelDia.Modelo}</strong></p>}
-            {step === 3 && !isCompleted && <p>{t('game.year')}: <strong>{t('resultModal.notGuessed')}</strong></p>}
-            {isCompleted && <p className="text-success">{t('resultModal.completed')}</p>}
+            <p>{renderSafeText(t('resultModal.progress'))}</p>
+            {step > 1 && <p>{renderSafeText(t('game.brand'))}: <strong>{renderSafeText(vehiculoDelDia.Marca)}</strong></p>}
+            {step > 2 && <p>{renderSafeText(t('game.model'))}: <strong>{renderSafeText(vehiculoDelDia.Modelo)}</strong></p>}
+            {step === 3 && !isCompleted && <p>{renderSafeText(t('game.year'))}: <strong>{renderSafeText(t('resultModal.notGuessed'))}</strong></p>}
+            {isCompleted && <p className="text-success">{renderSafeText(t('resultModal.completed'))}</p>}
           </div>
         </Modal.Body>
         <Modal.Footer className={theme === "dark" ? "bg-dark" : ""}>
           <Button variant="secondary" onClick={handleContinueToNormalMode}>
-            {t('resultModal.goToNormalButton')}
+            {renderSafeText(t('resultModal.goToNormalButton'))}
           </Button>
         </Modal.Footer>
       </Modal>

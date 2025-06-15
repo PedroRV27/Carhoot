@@ -9,33 +9,98 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLightbulb, faHome, faArrowLeft, faTrophy, faGamepad } from "@fortawesome/free-solid-svg-icons";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
+import DOMPurify from 'dompurify';
+import { saveGameProgress, loadGameProgress, checkAndResetDailyProgress } from "./utils/gameProgress";
 
-// Función para normalizar strings
+// Configuración avanzada de DOMPurify
+DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
+  if (data.attrName === 'style') return false;
+});
+
+DOMPurify.setConfig({
+  FORBID_TAGS: ['style', 'script', 'iframe', 'frame', 'object', 'embed'],
+  FORBID_ATTR: ['style', 'onclick', 'onerror', 'onload', 'onmouseover'],
+  USE_PROFILES: { html: true },
+  ADD_ATTR: ['target'],
+});
+
+// Función de sanitización mejorada
+const sanitizeInput = (input, type = 'text') => {
+  if (typeof input !== 'string') return '';
+  
+  // Sanitización básica con DOMPurify
+  let sanitized = DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true
+  });
+  
+  // Validación específica por tipo
+  switch(type) {
+    case 'year':
+      sanitized = sanitized.replace(/[^0-9]/g, '');
+      // Limitar a 4 dígitos para años
+      if (sanitized.length > 4) {
+        sanitized = sanitized.substring(0, 4);
+      }
+      break;
+    case 'brand':
+    case 'model':
+      // Permitir letras, números, espacios y algunos caracteres especiales comunes
+      sanitized = sanitized.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-.,]/g, '');
+      // Limitar longitud
+      if (sanitized.length > 30) {
+        sanitized = sanitized.substring(0, 30);
+      }
+      break;
+    default:
+      sanitized = sanitized.replace(/[<>"'`]/g, '');
+  }
+  
+  return sanitized.trim();
+};
+
+// Función para normalizar strings para comparación
 const normalizeString = (str) => {
   return typeof str === 'string' 
     ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
     : String(str).toLowerCase().trim();
 };
 
-const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled }) => (
-  <input
-    type="text"
-    className={`form-control input-field ${disabled ? 'disabled-field' : ''} ${status}`}
-    placeholder={placeholder}
-    value={value}
-    onChange={onChange}
-    onKeyDown={onKeyDown}
-    disabled={disabled}
-  />
+// Función para renderizar texto seguro
+const renderSafeText = (text) => (
+  <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text?.toString() || '') }} />
 );
+
+// Componente InputField con validación mejorada
+const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled, type = 'text' }) => {
+  const handleChange = (e) => {
+    const sanitizedValue = sanitizeInput(e.target.value, type);
+    e.target.value = sanitizedValue;
+    onChange(e);
+  };
+
+  return (
+    <input
+      type="text"
+      className={`form-control input-field ${disabled ? 'disabled-field' : ''} ${status}`}
+      placeholder={DOMPurify.sanitize(placeholder || '')}
+      value={DOMPurify.sanitize(value || '')}
+      onChange={handleChange}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+      maxLength={type === 'year' ? 4 : 30}
+    />
+  );
+};
 
 const PlayerTurnIndicator = ({ currentPlayer, players, isChanging, currentRound, t }) => (
   <div className={`player-turn-indicator ${isChanging ? 'changing' : ''}`}>
-    <h4>{t('multiplayer.turnOf')} <span className="player-name">{players[currentPlayer].name}</span></h4>
+    <h4>{renderSafeText(t('multiplayer.turnOf'))} <span className="player-name">{renderSafeText(players[currentPlayer].name)}</span></h4>
     <div className="player-scores">
       {players.map((player, index) => (
         <div key={index} className={`player-score ${index === currentPlayer ? 'active' : ''}`}>
-          {player.name}: {player.score} {t('multiplayer.points')}
+          {renderSafeText(player.name)}: {player.score} {renderSafeText(t('multiplayer.points'))}
         </div>
       ))}
     </div>
@@ -82,7 +147,7 @@ const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle, t, 
                     ? "text-success fw-bold" 
                     : getPartialMatchStyle(intento.marca, vehiculoActual?.Marca)
                 }>
-                  {intento.marca}
+                  {renderSafeText(intento.marca)}
                 </span>
               )}
               {intento.modelo && (
@@ -91,22 +156,22 @@ const FailedAttemptsList = ({ attempts, currentPlayerIndex, getFallidoStyle, t, 
                     ? "text-success fw-bold" 
                     : getPartialMatchStyle(intento.modelo, vehiculoActual?.Modelo)
                 }>
-                  {intento.modelo}
+                  {renderSafeText(intento.modelo)}
                 </span>
               )}
               {intento.ano && (
                 <span className={getFallidoStyle(intento)}>
-                  {intento.ano}
+                  {renderSafeText(intento.ano)}
                 </span>
               )}
               {intento.marcaCorrecta && !intento.modeloCorrecto && !intento.anoCorrecto && (
-                <div className="feedback-message text-success">{t('multiplayer.correctBrand')}</div>
+                <div className="feedback-message text-success">{renderSafeText(t('multiplayer.correctBrand'))}</div>
               )}
               {intento.modeloCorrecto && (
-                <div className="feedback-message text-success">{t('multiplayer.correctModel')}</div>
+                <div className="feedback-message text-success">{renderSafeText(t('multiplayer.correctModel'))}</div>
               )}
               {intento.anoCorrecto && (
-                <div className="feedback-message text-success">{t('multiplayer.correctYear')}</div>
+                <div className="feedback-message text-success">{renderSafeText(t('multiplayer.correctYear'))}</div>
               )}
             </li>
           ))}
@@ -124,22 +189,22 @@ const WinnerModal = ({ players, onClose, t }) => {
       <div className="winner-modal">
         <div className="winner-modal-header">
           <FontAwesomeIcon icon={faTrophy} className="trophy-icon" />
-          <h2 className="JuegoCompletado">{t('multiplayer.gameCompleted')}</h2>
+          <h2 className="JuegoCompletado">{renderSafeText(t('multiplayer.gameCompleted'))}</h2>
         </div>
         
         <div className="winner-modal-body">
-          <h3>{t('multiplayer.finalResults')}</h3>
+          <h3>{renderSafeText(t('multiplayer.finalResults'))}</h3>
           {players.map((player, index) => (
             <div key={index} className={`player-result ${player.score === winnerScore ? 'winner' : ''}`}>
-              <span className="player-name">{player.name}</span>
-              <span className="player-score">{player.score} {t('multiplayer.points')}</span>
-              {player.score === winnerScore && <span className="winner-badge">{t('multiplayer.winner')}</span>}
+              <span className="player-name">{renderSafeText(player.name)}</span>
+              <span className="player-score">{player.score} {renderSafeText(t('multiplayer.points'))}</span>
+              {player.score === winnerScore && <span className="winner-badge">{renderSafeText(t('multiplayer.winner'))}</span>}
             </div>
           ))}
         </div>
         
         <button onClick={onClose} className="btn btn-primary winner-modal-button">
-          {t('multiplayer.backToHome')}
+          {renderSafeText(t('multiplayer.backToHome'))}
         </button>
       </div>
     </div>
@@ -177,6 +242,7 @@ const JuegoMultijugador = () => {
     anoAdivinado: false
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [noVehicleToday, setNoVehicleToday] = useState(false);
 
   // Función mejorada de validación
   const validateInput = (input, correctValue) => {
@@ -186,16 +252,43 @@ const JuegoMultijugador = () => {
 
   // Función mejorada para validar año
   const validateYear = (input, correctValue) => {
+    // Verificar que solo contiene números
+    if (!/^\d+$/.test(input)) return false;
+    
     const userYear = parseInt(input);
     const correctYear = parseInt(correctValue);
-    return !isNaN(userYear) && !isNaN(correctYear) && userYear === correctYear;
+    
+    // Validar rango razonable para un año de fabricación
+    if (userYear < 1886 || userYear > new Date().getFullYear() + 1) {
+      return false;
+    }
+    
+    return !isNaN(userYear) && userYear === correctYear;
   };
 
   useEffect(() => {
+    checkAndResetDailyProgress();
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const coches = await getCoches();
+        const hoy = new Date().toISOString().split("T")[0];
+        
+        // Función para sanitizar los datos del vehículo
+        const sanitizeVehicle = (vehicle) => {
+          if (!vehicle) return null;
+          return {
+            ...vehicle,
+            Marca: sanitizeInput(vehicle.Marca, 'brand'),
+            Modelo: sanitizeInput(vehicle.Modelo, 'model'),
+            AnoFabricacion: sanitizeInput(vehicle.AnoFabricacion?.toString(), 'year'),
+            Imagenes: vehicle.Imagenes?.map(img => 
+              DOMPurify.sanitize(img, {
+                ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+              })
+            ) || []
+          };
+        };
         
         const vehiculosAleatorios = [];
         const indicesUsados = new Set();
@@ -205,13 +298,18 @@ const JuegoMultijugador = () => {
           const indiceAleatorio = Math.floor(Math.random() * coches.length);
           if (!indicesUsados.has(indiceAleatorio)) {
             indicesUsados.add(indiceAleatorio);
-            vehiculosAleatorios.push(coches[indiceAleatorio]);
+            vehiculosAleatorios.push(sanitizeVehicle(coches[indiceAleatorio]));
           }
         }
         
-        setVehiculosDelDia(vehiculosAleatorios);
+        if (vehiculosAleatorios.length === 0) {
+          setNoVehicleToday(true);
+        } else {
+          setVehiculosDelDia(vehiculosAleatorios);
+        }
       } catch (error) {
         console.error("Error al obtener los coches:", error);
+        setNoVehicleToday(true);
       } finally {
         setIsLoading(false);
       }
@@ -272,8 +370,8 @@ const JuegoMultijugador = () => {
     e.preventDefault();
     if (tempPlayerNames[0].trim() && tempPlayerNames[1].trim()) {
       setPlayers([
-        { name: tempPlayerNames[0].trim(), score: 0 },
-        { name: tempPlayerNames[1].trim(), score: 0 }
+        { name: sanitizeInput(tempPlayerNames[0].trim(), 'name'), score: 0 },
+        { name: sanitizeInput(tempPlayerNames[1].trim(), 'name'), score: 0 }
       ]);
       setCurrentPlayer(0);
       setShowPlayerNamesModal(false);
@@ -282,7 +380,7 @@ const JuegoMultijugador = () => {
 
   const handlePlayerNameChange = (index, value) => {
     const newNames = [...tempPlayerNames];
-    newNames[index] = value;
+    newNames[index] = sanitizeInput(value, 'name');
     setTempPlayerNames(newNames);
   };
 
@@ -322,12 +420,16 @@ const JuegoMultijugador = () => {
     if (!vehiculosDelDia[currentVehiculoIndex] || isChangingPlayer) return;
 
     const vehiculoActual = vehiculosDelDia[currentVehiculoIndex];
+    const safeMarca = sanitizeInput(marca, 'brand');
+    const safeModelo = sanitizeInput(modelo, 'model');
+    const safeAno = sanitizeInput(anoFabricacion, 'year');
+
     const marcaCorrecta = currentVehiculoIndex !== 2 
-      ? validateInput(marca, vehiculoActual.Marca)
-      : true; // En la ronda 3, la marca ya está adivinada
+      ? validateInput(safeMarca, vehiculoActual.Marca)
+      : true;
     
-    const modeloCorrecto = validateInput(modelo, vehiculoActual.Modelo);
-    const anoCorrecto = validateYear(anoFabricacion, vehiculoActual.AnoFabricacion);
+    const modeloCorrecto = validateInput(safeModelo, vehiculoActual.Modelo);
+    const anoCorrecto = validateYear(safeAno, vehiculoActual.AnoFabricacion);
     
     const updatedPlayers = [...players];
     let newGameState = {...gameState};
@@ -356,9 +458,9 @@ const JuegoMultijugador = () => {
       setIntentosFallidos(prev => [
         ...prev,
         {
-          marca: currentVehiculoIndex !== 2 ? marca : null,
-          modelo,
-          ano: anoFabricacion,
+          marca: currentVehiculoIndex !== 2 ? safeMarca : null,
+          modelo: safeModelo,
+          ano: safeAno,
           playerIndex: currentPlayer,
           marcaCorrecta,
           modeloCorrecto,
@@ -408,7 +510,34 @@ const JuegoMultijugador = () => {
     return (
       <div className={`spinner-container ${containerClass}`}>
         <div className="spinner"></div>
-        <span>{t('multiplayer.loadingVehicles')}</span>
+        <span>{renderSafeText(t('multiplayer.loadingVehicles'))}</span>
+      </div>
+    );
+  }
+
+  if (noVehicleToday) {
+    return (
+      <div className={containerClass}>
+        <Header />
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-8">
+              <div className="card no-vehicle-card">
+                <div className="card-body text-center">
+                  <h2 className="mb-4 no-vehicle-title">
+                    {renderSafeText(t("game.noVehicleTitle"))}
+                  </h2>
+                  <p className="lead no-vehicle-message">
+                    {renderSafeText(t("game.noVehicleMessage"))}
+                  </p>
+                  <p className="no-vehicle-submessage">
+                    {renderSafeText(t("game.noVehicleSubmessage"))}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -427,13 +556,13 @@ const JuegoMultijugador = () => {
                   onClick={() => navigate("/")} 
                   className="btn jm-btn-back"
                 >
-                  <FontAwesomeIcon icon={faArrowLeft} /> {t('multiplayer.back')}
+                  <FontAwesomeIcon icon={faArrowLeft} /> {renderSafeText(t('multiplayer.back'))}
                 </button>
               </div>
               <div className="jm-modal-title-container">
                 <h2 className="jm-modal-title">
                   <FontAwesomeIcon icon={faGamepad} className="jm-button-icon" />
-                  {t('multiplayer.playerConfiguration')}
+                  {renderSafeText(t('multiplayer.playerConfiguration'))}
                 </h2>
               </div>
             </div>
@@ -441,7 +570,7 @@ const JuegoMultijugador = () => {
             <form onSubmit={handlePlayerNameSubmit} className="jm-modal-form">
               <div className="jm-form-group">
                 <label htmlFor="player1" className="jm-form-label">
-                  <span className="jm-player-number">{t('multiplayer.player1')}</span>
+                  <span className="jm-player-number">{renderSafeText(t('multiplayer.player1'))}</span>
                 </label>
                 <input
                   type="text"
@@ -452,13 +581,15 @@ const JuegoMultijugador = () => {
                   required
                   minLength="2"
                   maxLength="20"
+                  pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+"
+                  title={t('multiplayer.nameValidationMessage')}
                   autoFocus
                 />
               </div>
               
               <div className="jm-form-group">
                 <label htmlFor="player2" className="jm-form-label">
-                  <span className="jm-player-number">{t('multiplayer.player2')}</span>
+                  <span className="jm-player-number">{renderSafeText(t('multiplayer.player2'))}</span>
                 </label>
                 <input
                   type="text"
@@ -469,12 +600,14 @@ const JuegoMultijugador = () => {
                   required
                   minLength="2"
                   maxLength="20"
+                  pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+"
+                  title={t('multiplayer.nameValidationMessage')}
                 />
               </div>
               
               <button type="submit" className="btn jm-start-game-button">
                 <FontAwesomeIcon icon={faTrophy} className="jm-button-icon" />
-                {t('multiplayer.startGame')}
+                {renderSafeText(t('multiplayer.startGame'))}
               </button>
             </form>
           </div>
@@ -507,7 +640,7 @@ const JuegoMultijugador = () => {
             <div className="card">
               <div className="title-container">
                 <h1 className="game-title">
-                  {t('multiplayer.round')} {currentVehiculoIndex + 1}/3
+                  {renderSafeText(t('multiplayer.round'))} {currentVehiculoIndex + 1}/3
                 </h1>
               </div>
               <div className="card-body">
@@ -521,9 +654,15 @@ const JuegoMultijugador = () => {
                 
                 <div className="position-relative">
                   <img
-                    src={vehiculoActual.Imagenes[currentImageIndex]}
+                    src={DOMPurify.sanitize(vehiculoActual.Imagenes[currentImageIndex], {
+                      ALLOWED_URI_REGEXP: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
+                    })}
                     alt={t('multiplayer.vehicleAlt', { number: currentVehiculoIndex + 1 })}
                     className="img-fluid rounded vehicle-image"
+                    onError={(e) => {
+                      e.target.onerror = null; 
+                      e.target.src = 'placeholder-image.jpg';
+                    }}
                   />
                 </div>
 
@@ -548,6 +687,7 @@ const JuegoMultijugador = () => {
                         onKeyDown={handleKeyDown}
                         status={gameState.marcaAdivinada ? "success" : ""}
                         disabled={gameState.marcaAdivinada || isChangingPlayer}
+                        type="brand"
                       />
                     </div>
                   )}
@@ -560,6 +700,7 @@ const JuegoMultijugador = () => {
                       onKeyDown={handleKeyDown}
                       status={gameState.modeloAdivinado ? "success" : ""}
                       disabled={gameState.modeloAdivinado || isChangingPlayer}
+                      type="model"
                     />
                   </div>
                   
@@ -571,6 +712,7 @@ const JuegoMultijugador = () => {
                       onKeyDown={handleKeyDown}
                       status={gameState.anoAdivinado ? "success" : ""}
                       disabled={gameState.anoAdivinado || isChangingPlayer}
+                      type="year"
                     />
                   </div>
 
@@ -580,7 +722,7 @@ const JuegoMultijugador = () => {
                       onClick={handleGuess}
                       disabled={isGuessButtonDisabled()}
                     >
-                      {t('game.guessButton')}
+                      {renderSafeText(t('game.guessButton'))}
                     </button>
                   </div>
 
@@ -605,7 +747,7 @@ const JuegoMultijugador = () => {
           className={`privacy-policy-button ${theme === "dark" ? "dark-theme" : "light-theme"}`}
           onClick={() => setShowPrivacyPolicy(true)}
         >
-          {t("game.privacyPolicy")}
+          {renderSafeText(t("game.privacyPolicy"))}
         </button>
       </div>
 
@@ -614,7 +756,7 @@ const JuegoMultijugador = () => {
         onHide={() => setShowPrivacyPolicy(false)}
         theme={theme}
       />
-      <style jsx>{`
+            <style jsx>{`
         .intentos-fallidos-container {
           max-height: 300px;
           overflow-y: auto;

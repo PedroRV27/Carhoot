@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from "react";
-import Cookies from "js-cookie"; // Importar js-cookie
+import Cookies from "js-cookie"; 
 
-// Crear el contexto
+
 export const AppContext = createContext();
 
 // Proveedor del contexto
@@ -11,12 +11,12 @@ export const AppProvider = ({ children }) => {
 
   // Establecer el atributo data-theme en el body al cargar la aplicación
   useEffect(() => {
-    Cookies.set("theme", theme, { expires: 365 }); // Expira en 365 días
+    Cookies.set("theme", theme, { expires: 365 }); 
     document.body.setAttribute("data-theme", theme);
   }, [theme]);
 
   useEffect(() => {
-    Cookies.set("language", language, { expires: 365 }); // Expira en 365 días
+    Cookies.set("language", language, { expires: 365 }); 
   }, [language]);
 
   const toggleTheme = () => {

@@ -6,7 +6,6 @@ export const saveGameProgress = (vehiculoDelDia, progressData) => {
   
   const hoy = new Date().toISOString().split("T")[0];
   
-  // Calcular intentos usados sumando todos los fallos
   const totalFallos = 
     (progressData.intentosFallidos?.marca?.length || 0) +
     (progressData.intentosFallidos?.modelo?.length || 0) +

@@ -3,7 +3,7 @@ import { createCoches, deleteCoche, getCoches, updateCoche } from "./services/ap
 import { auth, db } from "./services/firebase";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { Container, Navbar, Button, Form, Table, Modal, Card, Row, Col } from 'react-bootstrap';
+import { Container, Navbar, Button, Form, Table, Modal, Card, Row, Col, Alert } from 'react-bootstrap';
 import './App.css';
 
 const App = () => {
@@ -27,6 +27,7 @@ const App = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -36,16 +37,35 @@ const App = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userRef);
 
-        if (userDoc.exists() && userDoc.data().role === "admin") {
+          if (!userDoc.exists()) {
+            await signOut(auth);
+            setUser(null);
+            setIsAdmin(false);
+            setError("No tienes permisos para acceder");
+            return;
+          }
+
+          if (userDoc.data().role !== "admin") {
+            await signOut(auth);
+            setUser(null);
+            setIsAdmin(false);
+            setError("No tienes permisos de administrador");
+            return;
+          }
+
           setUser(user);
           setIsAdmin(true);
           showCoches();
-        } else {
+        } catch (error) {
+          console.error("Error verificando permisos:", error);
+          await signOut(auth);
           setUser(null);
           setIsAdmin(false);
+          setError("Error verificando permisos");
         }
       } else {
         setUser(null);
@@ -57,16 +77,41 @@ const App = () => {
   }, []);
 
   const showCoches = async () => {
-    const data = await getCoches();
-    setCoches(data);
+    try {
+      const data = await getCoches();
+      setCoches(data);
+    } catch (error) {
+      console.error("Error al obtener coches:", error);
+      setError("Error al cargar los coches. Inténtalo de nuevo.");
+    }
   };
 
   const handleLogin = async () => {
+    const loginErrors = {};
+    
+    if (!email || email.trim() === "") {
+      loginErrors.email = "El email es obligatorio";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      loginErrors.email = "Por favor, introduce un email válido";
+    }
+    
+    if (!password || password.trim() === "") {
+      loginErrors.password = "La contraseña es obligatoria";
+    }
+
+    if (Object.keys(loginErrors).length > 0) {
+      setFieldErrors(loginErrors);
+      setError("Por favor, completa todos los campos correctamente");
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setError("");
+      setFieldErrors({});
     } catch (err) {
-      setError("Credenciales incorrectas");
+      setError("Credenciales incorrectas o problema de conexión");
+      setFieldErrors({});
     }
   };
 
@@ -76,10 +121,34 @@ const App = () => {
     setIsAdmin(false);
   };
 
+  const handleYearChange = (value, isEditing = false) => {
+    const numericValue = value.replace(/\D/g, '').slice(0, 4);
+    
+    if (isEditing) {
+      setEditingData(prev => ({ ...prev, AnoFabricacion: numericValue }));
+      if (fieldErrors.anoFabricacion) {
+        setFieldErrors(prev => ({...prev, anoFabricacion: ""}));
+      }
+    } else {
+      setAnoFabricacion(numericValue);
+      if (fieldErrors.anoFabricacion) {
+        setFieldErrors(prev => ({...prev, anoFabricacion: ""}));
+      }
+    }
+  };
+
+  const validateDate = (dateString) => {
+    if (!dateString) return true;
+    const selectedDate = new Date(dateString);
+    return !isNaN(selectedDate.getTime());
+  };
+
   const handleImageUpload = (e, isEditing = false) => {
     const files = Array.from(e.target.files);
-    if ((isEditing ? editingData.Imagenes.length + files.length : imagenes.length + files.length) > 5) {
-      alert("Solo puedes subir hasta 5 imágenes por coche.");
+    const currentImages = isEditing ? editingData.Imagenes.length : imagenes.length;
+    
+    if (currentImages + files.length > 5) {
+      setError("Solo puedes subir hasta 5 imágenes por coche");
       return;
     }
 
@@ -100,7 +169,36 @@ const App = () => {
       } else {
         setImagenes((prev) => [...prev, ...base64Images]);
       }
+      setFieldErrors(prev => ({...prev, imagenes: ""}));
     });
+  };
+
+  const validateCarData = (carData) => {
+    const errors = {};
+    
+    if (!carData.Marca || carData.Marca.trim().length < 2) {
+      errors.marca = "La marca es obligatoria y debe tener al menos 2 caracteres";
+    }
+    
+    if (!carData.Modelo || carData.Modelo.trim().length < 2) {
+      errors.modelo = "El modelo es obligatorio y debe tener al menos 2 caracteres";
+    }
+    
+    if (!carData.AnoFabricacion || carData.AnoFabricacion.length !== 4 || isNaN(carData.AnoFabricacion)) {
+      errors.anoFabricacion = "El año de fabricación debe tener exactamente 4 dígitos";
+    }
+    
+    if (carData.fechaProgramada && !validateDate(carData.fechaProgramada)) {
+      errors.fechaProgramada = "La fecha seleccionada no es válida";
+    }
+    
+    if (!carData.Imagenes || carData.Imagenes.length === 0) {
+      errors.imagenes = "Debes subir al menos una imagen";
+    } else if (carData.Imagenes.length > 5) {
+      errors.imagenes = "No puedes subir más de 5 imágenes";
+    }
+    
+    return errors;
   };
 
   const handleEdit = (id, coche) => {
@@ -113,6 +211,8 @@ const App = () => {
       fechaProgramada: coche.fechaProgramada || "",
     });
     setShowEditModal(true);
+    setError("");
+    setFieldErrors({});
   };
 
   const handleDeleteClick = (coche) => {
@@ -122,15 +222,27 @@ const App = () => {
 
   const confirmDelete = async () => {
     if (cocheToDelete) {
-      await deleteCoche(cocheToDelete.id);
-      showCoches();
-      setShowDeleteModal(false);
-      setCocheToDelete(null);
+      try {
+        await deleteCoche(cocheToDelete.id);
+        showCoches();
+        setShowDeleteModal(false);
+        setCocheToDelete(null);
+      } catch (error) {
+        console.error("Error al eliminar coche:", error);
+        setError("Error al eliminar el coche. Inténtalo de nuevo.");
+      }
     }
   };
 
   const handleUpdate = async () => {
-    if (editingId) {
+    const validationErrors = validateCarData(editingData);
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError("Por favor, corrige los errores en el formulario");
+      return;
+    }
+
+    try {
       await updateCoche(editingId, editingData);
       setEditingId(null);
       setEditingData({
@@ -142,6 +254,11 @@ const App = () => {
       });
       setShowEditModal(false);
       showCoches();
+      setError("");
+      setFieldErrors({});
+    } catch (error) {
+      console.error("Error al actualizar coche:", error);
+      setError("Error al actualizar el coche. Inténtalo de nuevo.");
     }
   };
 
@@ -159,13 +276,42 @@ const App = () => {
 
   const vehiculoDelDia = getVehiculoDelDia();
 
-  const filteredCoches = coches.filter((coche) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      coche.Marca.toLowerCase().includes(searchLower) ||
-      coche.Modelo.toLowerCase().includes(searchLower)
-    );
-  });
+  // Función para ordenar los coches por fecha programada (desde hoy hacia adelante)
+  const sortCochesByDate = (cochesList) => {
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    return [...cochesList].sort((a, b) => {
+      // Si no tiene fecha programada, va al final
+      if (!a.fechaProgramada) return 1;
+      if (!b.fechaProgramada) return -1;
+      
+      // Si la fecha es anterior a hoy, va después de las futuras
+      const aIsPast = a.fechaProgramada < hoy;
+      const bIsPast = b.fechaProgramada < hoy;
+      
+      if (aIsPast && !bIsPast) return 1;
+      if (!aIsPast && bIsPast) return -1;
+      if (aIsPast && bIsPast) return new Date(b.fechaProgramada).getTime() - new Date(a.fechaProgramada).getTime();
+      
+      // Ordenar fechas futuras de más cercana a más lejana
+      return new Date(a.fechaProgramada).getTime() - new Date(b.fechaProgramada).getTime();
+    });
+  };
+
+  const filteredCoches = sortCochesByDate(
+    coches.filter((coche) => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        coche.Marca.toLowerCase().includes(searchLower) ||
+        coche.Modelo.toLowerCase().includes(searchLower)
+      );
+    })
+  );
+
+  const clearErrors = () => {
+    setError("");
+    setFieldErrors({});
+  };
 
   return (
     <Container>
@@ -177,6 +323,8 @@ const App = () => {
           </Button>
         )}
       </Navbar>
+
+      {error && <Alert variant="danger" onClose={() => setError("")} dismissible>{error}</Alert>}
 
       {!user ? (
         <Row className="justify-content-center">
@@ -190,19 +338,40 @@ const App = () => {
                       type="email"
                       placeholder="Correo"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (fieldErrors.email) {
+                          setFieldErrors(prev => ({...prev, email: ""}));
+                        }
+                      }}
+                      required
+                      isInvalid={!!fieldErrors.email}
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {fieldErrors.email}
+                    </Form.Control.Feedback>
                   </Form.Group>
                   <Form.Group className="mb-3">
                     <Form.Control
                       type="password"
                       placeholder="Contraseña"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (fieldErrors.password) {
+                          setFieldErrors(prev => ({...prev, password: ""}));
+                        }
+                      }}
+                      required
+                      isInvalid={!!fieldErrors.password}
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {fieldErrors.password}
+                    </Form.Control.Feedback>
                   </Form.Group>
                   <Button onClick={handleLogin}>Iniciar sesión</Button>
                   {error && <p className="text-danger mt-2">{error}</p>}
+
                 </Form>
               </Card.Body>
             </Card>
@@ -222,7 +391,7 @@ const App = () => {
               />
             </Col>
             <Col>
-              <Button onClick={() => setShowAddModal(true)} >Añadir Coche</Button>
+              <Button onClick={() => { setShowAddModal(true); clearErrors(); }}>Añadir Coche</Button>
             </Col>
           </Row>
 
@@ -244,7 +413,6 @@ const App = () => {
             </Card>
           )}
 
-          {/* Tabla para pantallas grandes (oculta en moviles) */}
           <div className="d-none d-md-block">
             <Table striped bordered hover>
               <thead>
@@ -283,7 +451,6 @@ const App = () => {
             </Table>
           </div>
 
-          {/* Tarjetas para moviles (ocultas en pantallas grandes) */}
           <div className="d-block d-md-none">
             {filteredCoches.map((coche) => (
               <Card key={coche.id} className="mb-4">
@@ -309,7 +476,6 @@ const App = () => {
             ))}
           </div>
 
-          {/* Modal para añadir coche */}
           <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
             <Modal.Header closeButton>
               <Modal.Title style={{ color: 'black' }}>Añadir Coche</Modal.Title>
@@ -317,43 +483,97 @@ const App = () => {
             <Modal.Body>
               <Form>
                 <Form.Group className="mb-3">
+                  <Form.Label>Marca *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Marca"
                     value={marca}
-                    onChange={(e) => setMarca(e.target.value)}
+                    onChange={(e) => {
+                      setMarca(e.target.value);
+                      if (fieldErrors.marca) {
+                        setFieldErrors(prev => ({...prev, marca: ""}));
+                      }
+                    }}
+                    required
+                    minLength={2}
+                    maxLength={50}
+                    isInvalid={!!fieldErrors.marca}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.marca}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Modelo *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Modelo"
                     value={modelo}
-                    onChange={(e) => setModelo(e.target.value)}
+                    onChange={(e) => {
+                      setModelo(e.target.value);
+                      if (fieldErrors.modelo) {
+                        setFieldErrors(prev => ({...prev, modelo: ""}));
+                      }
+                    }}
+                    required
+                    minLength={2}
+                    maxLength={50}
+                    isInvalid={!!fieldErrors.modelo}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.modelo}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Año de Fabricación * (4 dígitos)</Form.Label>
                   <Form.Control
-                    type="number"
+                    type="text"
                     placeholder="Año de Fabricación"
                     value={anoFabricacion}
-                    onChange={(e) => setAnoFabricacion(e.target.value)}
+                    onChange={(e) => handleYearChange(e.target.value)}
+                    maxLength={4}
+                    required
+                    isInvalid={!!fieldErrors.anoFabricacion}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.anoFabricacion}
+                  </Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    Introduce exactamente 4 dígitos (ej: 2020)
+                  </Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Fecha Programada</Form.Label>
                   <Form.Control
                     type="date"
                     value={fechaProgramada}
-                    onChange={(e) => setFechaProgramada(e.target.value)}
+                    onChange={(e) => {
+                      const dateValue = e.target.value;
+                      setFechaProgramada(dateValue);
+                      if (fieldErrors.fechaProgramada) {
+                        setFieldErrors(prev => ({...prev, fechaProgramada: ""}));
+                      }
+                    }}
+                    isInvalid={!!fieldErrors.fechaProgramada}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.fechaProgramada}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Imágenes * (Máximo 5)</Form.Label>
                   <Form.Control
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={(e) => handleImageUpload(e)}
+                    required={imagenes.length === 0}
+                    isInvalid={!!fieldErrors.imagenes}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.imagenes}
+                  </Form.Control.Feedback>
+                  <Form.Text>Imágenes seleccionadas: {imagenes.length}/5</Form.Text>
                 </Form.Group>
               </Form>
             </Modal.Body>
@@ -361,10 +581,35 @@ const App = () => {
               <Button
                 variant="primary"
                 onClick={async () => {
-                  await createCoches({ Marca: marca, Modelo: modelo, AnoFabricacion: anoFabricacion, Imagenes: imagenes, fechaProgramada });
-                  setMarca(""); setModelo(""); setAnoFabricacion(""); setFechaProgramada(""); setImagenes([]);
-                  setShowAddModal(false);
-                  showCoches();
+                  const newCar = { 
+                    Marca: marca, 
+                    Modelo: modelo, 
+                    AnoFabricacion: anoFabricacion, 
+                    Imagenes: imagenes, 
+                    fechaProgramada 
+                  };
+                  
+                  const validationErrors = validateCarData(newCar);
+                  if (Object.keys(validationErrors).length > 0) {
+                    setFieldErrors(validationErrors);
+                    setError("Por favor, corrige los errores en el formulario");
+                    return;
+                  }
+
+                  try {
+                    await createCoches(newCar);
+                    setMarca("");
+                    setModelo("");
+                    setAnoFabricacion("");
+                    setFechaProgramada("");
+                    setImagenes([]);
+                    setShowAddModal(false);
+                    showCoches();
+                    clearErrors();
+                  } catch (error) {
+                    console.error("Error al crear coche:", error);
+                    setError("Error al crear el coche. Inténtalo de nuevo.");
+                  }
                 }}
               >
                 Guardar
@@ -372,7 +617,6 @@ const App = () => {
             </Modal.Footer>
           </Modal>
 
-          {/* Modal para editar coche */}
           <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
             <Modal.Header closeButton>
               <Modal.Title style={{ color: 'black' }}>Editar Coche</Modal.Title>
@@ -380,54 +624,108 @@ const App = () => {
             <Modal.Body>
               <Form>
                 <Form.Group className="mb-3">
+                  <Form.Label>Marca *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Marca"
                     value={editingData.Marca}
-                    onChange={(e) => setEditingData({ ...editingData, Marca: e.target.value })}
+                    onChange={(e) => {
+                      setEditingData({ ...editingData, Marca: e.target.value });
+                      if (fieldErrors.marca) {
+                        setFieldErrors(prev => ({...prev, marca: ""}));
+                      }
+                    }}
+                    required
+                    minLength={2}
+                    maxLength={50}
+                    isInvalid={!!fieldErrors.marca}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.marca}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Modelo *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Modelo"
                     value={editingData.Modelo}
-                    onChange={(e) => setEditingData({ ...editingData, Modelo: e.target.value })}
+                    onChange={(e) => {
+                      setEditingData({ ...editingData, Modelo: e.target.value });
+                      if (fieldErrors.modelo) {
+                        setFieldErrors(prev => ({...prev, modelo: ""}));
+                      }
+                    }}
+                    required
+                    minLength={2}
+                    maxLength={50}
+                    isInvalid={!!fieldErrors.modelo}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.modelo}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Año de Fabricación * (4 dígitos)</Form.Label>
                   <Form.Control
-                    type="number"
+                    type="text"
                     placeholder="Año de Fabricación"
                     value={editingData.AnoFabricacion}
-                    onChange={(e) => setEditingData({ ...editingData, AnoFabricacion: e.target.value })}
+                    onChange={(e) => handleYearChange(e.target.value, true)}
+                    maxLength={4}
+                    required
+                    isInvalid={!!fieldErrors.anoFabricacion}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.anoFabricacion}
+                  </Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    Introduce exactamente 4 dígitos (ej: 2020)
+                  </Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Fecha Programada</Form.Label>
                   <Form.Control
                     type="date"
                     value={editingData.fechaProgramada}
-                    onChange={(e) => setEditingData({ ...editingData, fechaProgramada: e.target.value })}
+                    onChange={(e) => {
+                      const dateValue = e.target.value;
+                      setEditingData({ ...editingData, fechaProgramada: dateValue });
+                      if (fieldErrors.fechaProgramada) {
+                        setFieldErrors(prev => ({...prev, fechaProgramada: ""}));
+                      }
+                    }}
+                    isInvalid={!!fieldErrors.fechaProgramada}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.fechaProgramada}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Imágenes * (Máximo 5)</Form.Label>
                   <Form.Control
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={(e) => handleImageUpload(e, true)}
+                    isInvalid={!!fieldErrors.imagenes}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.imagenes}
+                  </Form.Control.Feedback>
+                  <Form.Text>Imágenes seleccionadas: {editingData.Imagenes.length}/5</Form.Text>
                 </Form.Group>
                 <Row>
                   {editingData.Imagenes.map((img, index) => (
-                    <Col key={index} md={3}>
+                    <Col key={index} md={3} className="mb-2">
                       <Card.Img variant="top" src={img} alt={`Imagen ${index}`} className="car-image" />
                       <Button
                         variant="danger"
                         size="sm"
                         onClick={() => handleDeleteImage(index)}
+                        className="mt-1"
                       >
-                        X
+                        Eliminar
                       </Button>
                     </Col>
                   ))}
@@ -441,7 +739,6 @@ const App = () => {
             </Modal.Footer>
           </Modal>
 
-          {/* Modal de confirmación para eliminar */}
           <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
             <Modal.Header closeButton>
               <Modal.Title style={{ color: 'black' }}>Confirmar Eliminación</Modal.Title>

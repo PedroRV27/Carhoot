@@ -48,7 +48,7 @@ const sanitizeInput = (input, type = 'text') => {
     case 'brand':
     case 'model':
       // Permitir letras, números, espacios y algunos caracteres especiales comunes
-      sanitized = sanitized.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-.,]/g, '');
+      sanitized = sanitized.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\-.,]/g, '');
       // Limitar longitud
       if (sanitized.length > 30) {
         sanitized = sanitized.substring(0, 30);
@@ -64,9 +64,20 @@ const sanitizeInput = (input, type = 'text') => {
 // Componente InputField con validación mejorada
 const InputField = ({ value, placeholder, onChange, onKeyDown, status, disabled, type = 'text' }) => {
   const handleChange = (e) => {
-    const sanitizedValue = sanitizeInput(e.target.value, type);
-    e.target.value = sanitizedValue;
-    onChange(e);
+    // Permitir espacios libremente durante la escritura
+    let newValue = e.target.value;
+    
+    // Solo sanitizamos cuando realmente es necesario (al enviar el formulario)
+    if (onChange) {
+      const event = {
+        ...e,
+        target: {
+          ...e.target,
+          value: newValue // Pasamos el valor sin sanitizar inmediatamente
+        }
+      };
+      onChange(event);
+    }
   };
 
   return (
@@ -263,6 +274,12 @@ const Juego = () => {
 
   // Manejador de cambio de input con sanitización
   const handleInputChange = (e, field) => {
+     const rawValue = e.target.value;
+  
+  // Solo sanitizamos cuando realmente es necesario (al hacer submit)
+  if (field === "marca") setMarca(rawValue);
+  if (field === "modelo") setModelo(rawValue);
+  if (field === "anoFabricacion"){
     const sanitizedValue = sanitizeInput(
       e.target.value, 
       field === "anoFabricacion" ? "year" : 
@@ -272,8 +289,8 @@ const Juego = () => {
     if (field === "marca") setMarca(sanitizedValue);
     if (field === "modelo") setModelo(sanitizedValue);
     if (field === "anoFabricacion") setAnoFabricacion(sanitizedValue);
-  };
-
+  }};
+  
   // Estilo para intentos fallidos de año
   const getAnoFallidoStyle = (fallido) => {
     const userYear = parseInt(fallido);
